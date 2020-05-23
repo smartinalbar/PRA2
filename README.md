@@ -3,7 +3,7 @@ Integrantes del Grupo :
 <li>Mº Begoña Martinez Arribas
 <li>Silvia Martín Albarrán
 
-<h1>LIMPIEZA Y ANALISIS DE DATOS<h1>
+<h1>LIMPIEZA Y ANALISIS DE DATOS</h1>
 El objetivo de esta práctica es llevar a cabo todo el proceso de preprocessado y limpieza de datos de un dataset escogido de
 Kaggle y análisis de las principales variables con el uso de métodos estadísticos y algoritmos de regresión etc.
 
