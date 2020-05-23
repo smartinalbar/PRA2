@@ -1,7 +1,5 @@
-# PRA2
-Practica2 de Master Data Science - UOC 
+# PRA2 Master Data Science - UOC 
 Integrantes del Grupo :
-
 <li>Mº Begoña Martinez Arribas
 <li>Silvia Martín Albarrán
 
