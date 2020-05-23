@@ -1,0 +1,2229 @@
+---
+title: 'Tipología de datos PRA2 - Limpieza y análisis de datos'
+author: 'Autor: Begoña Martinez Arribas /Silvia Martín Albarrán'
+date: "Mayo 2020"
+output:
+  pdf_document:
+    fig_caption: yes
+    fig_height: 5
+    fig_width: 8
+    highlight: tango
+    toc: yes
+  html_document:
+    df_print: kable
+    highlight: tango
+    number_sections: yes
+    theme: cosmo
+    toc: yes
+    toc_depth: 4
+  word_document: 
+    df_print: kable
+    toc: yes
+    toc_depth: 3
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(knitr)
+library(ggplot2)
+library(dplyr)
+library(classInt)
+library(arules)
+library(caret)
+library(kernlab)
+library(FactoMineR)
+library(factoextra)
+library(readxl)
+library(foreign)
+library(reshape2) 
+library(formatR)
+library(UsingR)
+library(psych)
+
+library(corrplot)
+library(tidyverse)
+library(cluster)
+library(mclust)
+library(cowplot)
+library(rpart)
+library (gmodels)
+library (party)
+library (RColorBrewer)
+library (data.table)
+library (kableExtra)
+library (fpc)
+library (tm)
+library (corrplot)
+library (nortest) 
+library(extrafont)
+library(plotly)
+library(gridExtra) 
+library(grid) 
+library(graphics)
+library(agricolae)
+library(missForest)
+library(reprex)
+library(sp)
+```
+
+
+******************************************************
+<h1>Enunciado PRACTICA Nº 2</h1>
+******************************************************
+
+El objetivo de esta actividad será el tratamiento de un dataset, que puede ser el creado en la práctica 1 o bien cualquier dataset libre disponible en Kaggle (https://www.kaggle.com).
+
+Algunos ejemplos de dataset con los que podéis trabajar son:
+ + [ Red Wine Quality (https://www.kaggle.com/uciml/red-wine-quality-cortez-et-al-2009)
+ + [ Titanic: Machine Learning from Disaster (https://www.kaggle.com/c/titanic)
+
+El último ejemplo corresponde a una competición activa de Kaggle de manera que,
+opcionalmente, podéis aprovechar el trabajo realizado durante la práctica para entrar en esta competición.
+
+Siguiendo las principales etapas de un proyecto analítico, las diferentes tareas a realizar (y justificar) son las siguientes:
+
+****************
+# Descripción del dataset. ¿Por qué es importante y qué pregunta/problema pretende responder
+****************
+
+Se ha seleccionado el  juego de datos seleccionado en la página web kaggle denominado:
+ + [house-prices-advanced-regression-techniques] 
+en el que se puede observar el precio de las casas o propiedadesd vendidas en Ames , ciudad de Iowa y una serie de caracteristicas propias de las viviendas : año de consrucción o remodelación, materiales, el tipo de vivienda , area de la parcela, el barrio donde está ubicado y el tipo de zona , nº de habitaciónes en el sotano o en plantas , si tiene o no piscina  etc.
+
+Consideramos importante este dataset para poder responder como evoluciona el precio de venta en función de las caracteristicas de la casa y para poder aplicar tecnicas de regresión para poder predecir el precio que tendrá una casa similar en el futuro.
+
+El juego de datos de Kaggle consta de dos ficheros csv : train y test. 
+Para la practica vamos a utilizar el de entrenamiento que tiene la variable objetivo del precio de casa , con el fin de poder hacer el análisis inicial y la  limpieza y depuración . 
+Alguna preguntas inicialmente planteadas que podremos contestar a lo largo de esta práctica serán:
+- ¿Poseer aire acondicionado puede influir en el precio de la vivienda?
+- ¿Puede el vecindario influir en el precio?
+- ¿Dependiendo de la zona (residencial, industrial, etc) como varía el precio?
+- ¿El tipo de vivienda puede producir variaciones en el precio final?
+- ¿Qué otras características pueden influir en el precio (nº habitaciones, metros cuadrados, año de construcción, etc)?
+
+
+Este dataset consta de numerosas columnas (81) que pasamos a detallar:
+
+* MSSubClass: Identifica el tipo de casa de la venta - Variable categórica . Puede tomar los siguientes valores. 
+
+        20	1-STORY 1946 & NEWER ALL STYLES
+        30	1-STORY 1945 & OLDER
+        40	1-STORY W/FINISHED ATTIC ALL AGES
+        45	1-1/2 STORY - UNFINISHED ALL AGES
+        50	1-1/2 STORY FINISHED ALL AGES
+        60	2-STORY 1946 & NEWER
+        70	2-STORY 1945 & OLDER
+        75	2-1/2 STORY ALL AGES
+        80	SPLIT OR MULTI-LEVEL
+        85	SPLIT FOYER
+        90	DUPLEX - ALL STYLES AND AGES
+       120	1-STORY PUD (Planned Unit Development) - 1946 & NEWER
+       150	1-1/2 STORY PUD - ALL AGES
+       160	2-STORY PUD - 1946 & NEWER
+       180	PUD - MULTILEVEL - INCL SPLIT LEV/FOYER
+       190	2 FAMILY CONVERSION - ALL STYLES AND AGES
+
+* MSZoning: Zona donde se ubica la vivienda . Categórica. Puede tomar los siguientes valores 
+       A	Agriculture   
+       C	Commercial  
+       FV	Floating Village Residential
+       I	Industrial
+       RH	Residential High Density
+       RL	Residential Low Density
+       RP	Residential Low Density Park 
+       RM	Residential Medium Density
+	
+* LotFrontage: Pies (medida de longitud) lineales de la calle conectados con la casa.
+* LotArea: Tamaño de la parcela en metros cuadrados  - Cuantitativa
+* Street: Tipo de acceso a la calle - Categorica
+
+       Grvl	Gravel	
+       Pave	Paved
+
+* Alley: Tipo de callejón de acceso a la propiedad (*B) : 
+
+       Grvl	Gravel
+       Pave	Paved
+       NA 	No alley access
+		
+* LotShape: Tipo de estructura : (*B)
+
+       Reg	Regular	
+       IR1	Slightly irregular
+       IR2	Moderately Irregular
+       IR3	Irregular
+       
+* LandContour: Flatness of the proper (*B) 
+
+       Lvl	Near Flat/Level	
+       Bnk	Banked - Quick and significant rise from street grade to building
+       HLS	Hillside - Significant slope from side to side
+       Low	Depression
+		
+* Utilities: Tipo de servicios disponibles/accesibles
+		
+       AllPub	All public Utilities (E,G,W,& S)	
+       NoSewr	Electricity, Gas, and Water (Septic Tank)
+       NoSeWa	Electricity and Gas Only
+       ELO	Electricity only	
+	
+* LotConfig: Configuración de la propiedad.
+
+       Inside	Inside lot
+       Corner	Corner lot
+       CulDSac	Cul-de-sac
+       FR2	Frontage on 2 sides of property
+       FR3	Frontage on 3 sides of property
+	
+* LandSlope: Slope of property (*B) 
+		
+       Gtl	Gentle slope
+       Mod	Moderate Slope	
+       Sev	Severe Slope
+	
+* Neighborhood: Vecindario donde se ubica la propiedad dentro de Ames (Iowa)
+
+       Blmngtn	Bloomington Heights
+       Blueste	Bluestem
+       BrDale	Briardale
+       BrkSide	Brookside
+       ClearCr	Clear Creek
+       CollgCr	College Creek
+       Crawfor	Crawford
+       Edwards	Edwards
+       Gilbert	Gilbert
+       IDOTRR	Iowa DOT and Rail Road
+       MeadowV	Meadow Village
+       Mitchel	Mitchell
+       Names	North Ames
+       NoRidge	Northridge
+       NPkVill	Northpark Villa
+       NridgHt	Northridge Heights
+       NWAmes	Northwest Ames
+       OldTown	Old Town
+       SWISU	South & West of Iowa State University
+       Sawyer	Sawyer
+       SawyerW	Sawyer West
+       Somerst	Somerset
+       StoneBr	Stone Brook
+       Timber	Timberland
+       Veenker	Veenker
+			
+* Condition1: Proximidad a carreteras/ Normal / o Ferrocarril
+	
+       Artery	Adjacent to arterial street
+       Feedr	Adjacent to feeder street	
+       Norm	Normal	
+       RRNn	Within 200' of North-South Railroad
+       RRAn	Adjacent to North-South Railroad
+       PosN	Near positive off-site feature--park, greenbelt, etc.
+       PosA	Adjacent to postive off-site feature
+       RRNe	Within 200' of East-West Railroad
+       RRAe	Adjacent to East-West Railroad
+	
+* Condition2: Proximidad a carreteras/ Normal / o Ferrocarril (Si se da más de condicion) (*) 
+		
+       Artery	Adjacent to arterial street
+       Feedr	Adjacent to feeder street	
+       Norm	Normal	
+       RRNn	Within 200' of North-South Railroad
+       RRAn	Adjacent to North-South Railroad
+       PosN	Near positive off-site feature--park, greenbelt, etc.
+       PosA	Adjacent to postive off-site feature
+       RRNe	Within 200' of East-West Railroad
+       RRAe	Adjacent to East-West Railroad
+	
+* BldgType: Tipo de  Alojamiento 
+		
+       1Fam	Single-family Detached	
+       2FmCon	Two-family Conversion; originally built as one-family dwelling
+       Duplx	Duplex
+       TwnhsE	Townhouse End Unit
+       TwnhsI	Townhouse Inside Unit
+	
+* HouseStyle: Estilo de vivienda (*B) 
+	
+       1Story	One story
+       1.5Fin	One and one-half story: 2nd level finished
+       1.5Unf	One and one-half story: 2nd level unfinished
+       2Story	Two story
+       2.5Fin	Two and one-half story: 2nd level finished
+       2.5Unf	Two and one-half story: 2nd level unfinished
+       SFoyer	Split Foyer 
+       SLvl	Split Level
+	
+* OverallQual: Calidad de los materiales de la casa 
+
+       10	Very Excellent
+       9	Excellent
+       8	Very Good
+       7	Good
+       6	Above Average
+       5	Average
+       4	Below Average
+       3	Fair
+       2	Poor
+       1	Very Poor
+	
+* OverallCond: Evaluación del estado general de la casa (*B)
+
+       10	Very Excellent
+       9	Excellent
+       8	Very Good
+       7	Good
+       6	Above Average	
+       5	Average
+       4	Below Average	
+       3	Fair
+       2	Poor
+       1	Very Poor
+		
+* YearBuilt: Año de construcción de la casa
+* YearRemodAdd: Año de remodelación de la casa
+* RoofStyle: Tipo de tejado /techo (*B)
+
+       Flat	Flat
+       Gable	Gable
+       Gambrel	Gabrel (Barn)
+       Hip	Hip
+       Mansard	Mansard
+       Shed	Shed
+		
+* RoofMatl: Material del tejado (*B)
+
+       ClyTile	Clay or Tile
+       CompShg	Standard (Composite) Shingle
+       Membran	Membrane
+       Metal	Metal
+       Roll	Roll
+       Tar&Grv	Gravel & Tar
+       WdShake	Wood Shakes
+       WdShngl	Wood Shingles
+		
+* Exterior1st: Cubierta exterior (*B)
+
+       AsbShng	Asbestos Shingles
+       AsphShn	Asphalt Shingles
+       BrkComm	Brick Common
+       BrkFace	Brick Face
+       CBlock	Cinder Block
+       CemntBd	Cement Board
+       HdBoard	Hard Board
+       ImStucc	Imitation Stucco
+       MetalSd	Metal Siding
+       Other	Other
+       Plywood	Plywood
+       PreCast	PreCast	
+       Stone	Stone
+       Stucco	Stucco
+       VinylSd	Vinyl Siding
+       Wd Sdng	Wood Siding
+       WdShing	Wood Shingles
+	
+* Exterior2nd: Segundo material de la cubierta exterior (si hay más de un material) (*B)
+
+       AsbShng	Asbestos Shingles
+       AsphShn	Asphalt Shingles
+       BrkComm	Brick Common
+       BrkFace	Brick Face
+       CBlock	Cinder Block
+       CemntBd	Cement Board
+       HdBoard	Hard Board
+       ImStucc	Imitation Stucco
+       MetalSd	Metal Siding
+       Other	Other
+       Plywood	Plywood
+       PreCast	PreCast
+       Stone	Stone
+       Stucco	Stucco
+       VinylSd	Vinyl Siding
+       Wd Sdng	Wood Siding
+       WdShing	Wood Shingles
+	
+* MasVnrType: Tipo de revestimiento de manposteria (*B)
+
+       BrkCmn	Brick Common
+       BrkFace	Brick Face
+       CBlock	Cinder Block
+       None	None
+       Stone	Stone
+	
+* MasVnrArea: Area de revestimiento de manposteria. Tiene relación con la anterior.(*B)
+
+* ExterQual: Calidad de los materiales externos (*B)
+		
+       Ex	Excellent
+       Gd	Good
+       TA	Average/Typical
+       Fa	Fair
+       Po	Poor
+		
+* ExterCond: Condiciones de los materiales externos (*B)
+		
+       Ex	Excellent
+       Gd	Good
+       TA	Average/Typical
+       Fa	Fair
+       Po	Poor
+		
+* Foundation: Tipo de cimientos (*B)
+		
+       BrkTil	Brick & Tile
+       CBlock	Cinder Block
+       PConc	Poured Contrete	
+       Slab	Slab
+       Stone	Stone
+       Wood	Wood
+		
+* BsmtQual: Altura del sotano
+
+       Ex	Excellent (100+ inches)	
+       Gd	Good (90-99 inches)
+       TA	Typical (80-89 inches)
+       Fa	Fair (70-79 inches)
+       Po	Poor (<70 inches
+       NA	No Basement
+		
+* BsmtCond: Evalua el estado general del sotano (*B)
+
+       Ex	Excellent
+       Gd	Good
+       TA	Typical - slight dampness allowed
+       Fa	Fair - dampness or some cracking or settling
+       Po	Poor - Severe cracking, settling, or wetness
+       NA	No Basement
+	
+* BsmtExposure: Exposición del sotano al jardín o a un paseo.(*B)
+
+       Gd	Good Exposure
+       Av	Average Exposure (split levels or foyers typically score average or above)	
+       Mn	Mimimum Exposure
+       No	No Exposure
+       NA	No Basement
+	
+* BsmtFinType1: Estado del Acabado del sotano (*B)
+
+       GLQ	Good Living Quarters
+       ALQ	Average Living Quarters
+       BLQ	Below Average Living Quarters	
+       Rec	Average Rec Room
+       LwQ	Low Quality
+       Unf	Unfinshed
+       NA	No Basement
+		
+* BsmtFinSF1: El número de metros cuadrados del sotano 
+
+* BsmtFinType2: Clasificación del acabado  del sotano (si hay más de uno) (*B)
+
+       GLQ	Good Living Quarters
+       ALQ	Average Living Quarters
+       BLQ	Below Average Living Quarters	
+       Rec	Average Rec Room
+       LwQ	Low Quality
+       Unf	Unfinshed
+       NA	No Basement
+
+* BsmtFinSF2: El número de metros cuadrados del sotano2 (*B)
+
+* BsmtUnfSF: Unfinished square feet of basement area (*B)
+
+* TotalBsmtSF: Area total del sotano
+
+* Heating: Tipo de calefacción
+		
+       Floor	Floor Furnace
+       GasA	Gas forced warm air furnace
+       GasW	Gas hot water or steam heat
+       Grav	Gravity furnace	
+       OthW	Hot water or steam heat other than gas
+       Wall	Wall furnace
+		
+* HeatingQC: Calidad de la calefacción /condiciones.
+
+       Ex	Excellent
+       Gd	Good
+       TA	Average/Typical
+       Fa	Fair
+       Po	Poor
+		
+* CentralAir: Aire acondicionado 
+
+       N	No
+       Y	Yes
+		
+* Electrical: Sistema Eléctrico. (*B) 
+
+       SBrkr	Standard Circuit Breakers & Romex
+       FuseA	Fuse Box over 60 AMP and all Romex wiring (Average)	
+       FuseF	60 AMP Fuse Box and mostly Romex wiring (Fair)
+       FuseP	60 AMP Fuse Box and mostly knob & tube wiring (poor)
+       Mix	Mixed
+		
+* 1stFlrSF: Metros cuadrados de la primera planta (*B)
+* 2ndFlrSF: Metros cuadrados de las segunda planta (*B)
+* LowQualFinSF: Area terminada de baja calidad (metros cuadrados) (*B) 
+* GrLivArea: Area habitable en metros cuadrados
+* BsmtFullBath: Nº de baños completos en el sotano (*B)
+* BsmtHalfBath: Nº de aseos en el sotano. (*B)
+* FullBath: Nº de baños en la vivienda (plantas) 
+* HalfBath: Nº de aseos en la vivienda (plantas) 
+* BedroomAbvGrd: Nº de habitaciones en la planta (no incluye los del sotano)
+* Kitchen: Nº de cocinas en la vivienda
+* KitchenQual: Calidad de la cocina
+
+       Ex	Excellent
+       Gd	Good
+       TA	Typical/Average
+       Fa	Fair
+       Po	Poor
+       	
+* TotRmsAbvGrd: Nº total de habitaciones de la vivienda (sin contar baños)
+* Functional: Uso de la vivienda (por si tienen descuentos) (*B)
+
+       Typ	Typical Functionality
+       Min1	Minor Deductions 1
+       Min2	Minor Deductions 2
+       Mod	Moderate Deductions
+       Maj1	Major Deductions 1
+       Maj2	Major Deductions 2
+       Sev	Severely Damaged
+       Sal	Salvage only
+		
+* Fireplaces: Numero de chimeneas 
+
+* FireplaceQu: Calidad de la chimeneas
+
+       Ex	Excellent - Exceptional Masonry Fireplace
+       Gd	Good - Masonry Fireplace in main level
+       TA	Average - Prefabricated Fireplace in main living area or Masonry Fireplace in basement
+       Fa	Fair - Prefabricated Fireplace in basement
+       Po	Poor - Ben Franklin Stove
+       NA	No Fireplace
+		
+* GarageType: Ubicación del garage
+		
+       2Types	More than one type of garage
+       Attchd	Attached to home
+       Basment	Basement Garage
+       BuiltIn	Built-In (Garage part of house - typically has room above garage)
+       CarPort	Car Port
+       Detchd	Detached from home
+       NA	No Garage
+
+* GarageFinish: Acabado del garage
+
+       Fin	Finished
+       RFn	Rough Finished	
+       Unf	Unfinished
+       NA	No Garage
+       
+* GarageYrBlt: Año de construcción del garage		
+* GarageCars: Capacidad del nº de coches (plazas)
+* GarageArea: Tamaño del garaje (metros cuadrados)
+* GarageQual: Calidad del garaje 
+
+       Ex	Excellent
+       Gd	Good
+       TA	Typical/Average
+       Fa	Fair
+       Po	Poor
+       NA	No Garage
+		
+* GarageCond: Condición del garaje 
+
+       Ex	Excellent
+       Gd	Good
+       TA	Typical/Average
+       Fa	Fair
+       Po	Poor
+       NA	No Garage
+		
+* PavedDrive: Camino de entrada  (*B) 
+
+       Y	Paved 
+       P	Partial Pavement
+       N	Dirt/Gravel
+		
+* WoodDeckSF: Area de cubierta de madera (metros cuadrados) (*B)
+* OpenPorchSF: Area del porche abierto (metros cuadrados) 
+* EnclosedPorch: Area del porche cerrado (metros cuadrados) (*B)
+* 3SsnPorch:  Area del porche 3 estaciones (metros cuadrados)(*B) 
+* ScreenPorch: Area de la pantalla del porches (metros cuadrados) (*B) 
+* PoolArea: Tamaño de la piscina (en metros cuadrados) (*B)
+* PoolQC: Calidad de la piscina (*B)
+		
+       Ex	Excelente
+       Gd	Buenda
+       TA	Media/Tipica
+       Fa	Justa/pequeña
+       NA	Sin piscina
+       
+* Fence: Calidad de la valla (en metros cuadrados)
+		
+       GdPrv	Good Privacy
+       MnPrv	Minimum Privacy
+       GdWo	Good Wood
+       MnWw	Minimum Wood/Wire
+       NA	No Fence
+	
+* MiscFeature: Otras caracteristicas adicionales. 
+		
+       Elev	Elevator
+       Gar2	2nd Garage (if not described in garage section)
+       Othr	Other
+       Shed	Shed (over 100 SF)
+       TenC	Tennis Court
+       NA	None
+		
+* MiscVal: Importe ($) de las caracteristicas adicionales. 
+* MoSold: Month Sold (MM) (Mes de la venta)
+* YrSold: Year Sold (YYYY) (Año de la venta)
+* SaleType: Condicidiones de la venta (*B)
+		
+       WD 	Warranty Deed - Conventional
+       CWD	Warranty Deed - Cash
+       VWD	Warranty Deed - VA Loan
+       New	Home just constructed and sold
+       COD	Court Officer Deed/Estate
+       Con	Contract 15% Down payment regular terms
+       ConLw	Contract Low Down payment and low interest
+       ConLI	Contract Low Interest
+       ConLD	Contract Low Down
+       Oth	Other
+* SaleCondition: Condition of sale (*B)
+
+       Normal	Normal Sale
+       Abnorml	Abnormal Sale -  trade, foreclosure, short sale
+       AdjLand	Adjoining Land Purchase
+       Alloca	Allocation - two linked properties with separate deeds, 
+                           typically condo    with a garage unit	
+       Family	Sale between family members
+       Partial	Home was not completed when last assessed (associated with New Homes)
+
+
+
+*******************
+# Integración y selección de los datos de interés a analizar
+*******************
+
+A continuación se lleva a cabo la carga el dataset que vamos a utilizar. Se muestran algunos datos y la estructura del dataset:
+
+Para cargar el dataset lo hacemos desde el directorio del entorno por defecto de cada ordenador, por lo que se ha usado un setwd para indicar el path correspondiente
+
+```{r}
+houses<-read.csv("train_house.csv", stringsAsFactors = FALSE)
+
+#Mostramos las primeras filas del juego de datos.
+head(houses[,1:7],3)
+```
+
+Guardamos un backup del dataset por si fuera necesario recuperarlo.
+```{r warning=FALSE,error=FALSE,message=FALSE}
+houses_bk <- houses
+```
+
+Con la siguiente instruccion vemos el nº observaciones (filas) y atributos (columnas) del juego de datos. (Dimension)
+
+```{r warning=FALSE,error=FALSE,message=FALSE}
+# Se muestran el nº de columnas y  observaciones que tiene el juego de datos
+dim.datos <- dim(houses)
+dim.datos
+# Guardamos el nº de filas y de variables para su utilización posterior
+n.ind = dim.datos[1]
+n.var = dim.datos[2]
+```
+Vemos el tipo de variables y valores de los datos leídos del fichero
+```{r}
+str(houses)
+```
+
+Se extraen los principales descriptivos de las variables con la función summary
+
+```{r warning=FALSE,error=FALSE,message=FALSE}
+summary(houses)
+```
+
+Como se ha indicado previamente el dataset tratado es muy amplio en cuanto al número de atributos. Para el análisis a llevar acabo acorde a las preguntas planetadas en el apartado previo, seleccionaremos aquellos atributos que a lo largo del estudio realizado en la practica contribuyan a encontrar las respuestas. Eliminaremos aquellos atributos que no aporten información relevante (no muestren correlación) o puedan incluir ruido (variables con más de 90% de valores vacíos).
+
+
+*******************
+# Limpieza de datos
+*******************
+
+## Missing Values : ¿Los datos contienen ceros o elementos vacíos? ¿Cómo gestionarías cada uno de estos casos? 
+
+Los valores missing o desconocidos pueden deberse a errores en la introducción de datos, o bién ser valores logicos porque no aplica poner cualquier otra categoría o en el caso del 0 , porque se corresponde con un valor valido de la medida de dicha variable.
+Una vez revisado el dataset se ha visto que los posibles valores vacíos vienen cumplimentados como NA o 0, exluyendo otros valores como '?'. 
+Para detectar los nulos ,se puede utilizar :
+
+```{r warning=FALSE,error=FALSE,message=FALSE}
+colSums(is.na(houses))
+```
+
+Se extrae el % de valores perdidos por cada atributo:
+
+```{r}
+misscols<-sapply(houses, function(x)all(any(is.na(x))))
+colswithmiss <-names(misscols[misscols>0]);
+x = data.frame(houses[,colswithmiss])
+PorcentajeDatosMissing<-apply(x, 2, function(col)sum(is.na(col))/length(col))
+missing.char<-as.data.table(PorcentajeDatosMissing,keep.rownames = "Variable")
+print(missing.char)
+```
+Visualizamos como se distribuyen los valores vacíos por atributo
+```{r}
+options(repr.plot.width=6, repr.plot.height=5)
+houses_mis = function(x){sum(is.na(x))}
+mis <- sort(apply(houses,2,houses_mis),decreasing=T);
+barplot(mis[mis!=0],
+        las=2,
+        cex.names=0.6,
+        ylab="Count",
+        ylim=c(0,3000),
+        horiz=F,
+        col="blue",
+        main=paste(toString(sum(mis!=0)), "Variables con datos faltantes"))
+```
+
+Para aquellas variables que tienen más de un 80% de valores vacíos se incluye la etiqueta "Not apply" en estos. Esas variables son: Alley, PoolQC, MiscFeature y Fence. 
+Además para el resto de variables se gestionan los valores perdidos que están vacíos bien con la moda o mediana según se trate de un atributo categórico o numérico. 
+El valor 0 en las variables numéricas que admiten este valor se ha considerado un valor legítimo. En los casos que se trata del area de una variable categórica que no aplica este valor ciertamente debe ser 0
+A continuación se incluye esta implementación de los valores perdidos.
+```{r}
+for (i in 1:nrow(houses))
+{
+  # Para Alley, PoolQC, MiscFeature y Fence con más del 80% de valores a NA se decide 
+  #incluir la etiqueta 'Not apply'
+  houses$Alley[is.na(houses$Alley)] <- "Not Apply"
+  houses$PoolQC[is.na(houses$PoolQC)]<- "Not apply" 
+  houses$MiscFeature[is.na(houses$MiscFeature)]<- "Not apply" 
+  houses$Fence[is.na(houses$Fence)]<- "Not apply" 
+  
+  #Para la variable MasVnrType se decide completar los vacíos con "Not apply" ya que 
+  #todos tienen el siguiente atributo  relacionado MasVnrArea vacío se distingue 
+  #del valor None para saber los que se han limpiado con este proceso
+  houses$MasVnrType[is.na(houses$MasVnrType)]<- "Not apply" 
+  
+  #Para la variable BsmtQual los vacíos se ponen como "Not apply" ya que se trata de 
+  #una variable de tipo categórico
+  houses$BsmtQual[is.na(houses$BsmtQual)]<- "Not apply" 
+  
+  #Para la variable BsmtCond los vacíos se ponen como "Not apply" ya que se trata de
+  #una variable de tipo categórico
+  houses$BsmtCond[is.na(houses$BsmtCond)]<- "Not apply" 
+  
+  #Para la variable BsmtExposure los vacíos se ponen como "Not apply" ya que se trata 
+  #de una variable de tipo categórico
+  houses$BsmtExposure[is.na(houses$BsmtExposure)]<- "Not apply" 
+  
+  #Para la variable BsmtFinType1 los vacíos se ponen como "Not apply" ya que se trata 
+  #de una variable de tipo categórico
+  houses$BsmtFinType1[is.na(houses$BsmtFinType1)]<- "Not apply" 
+  
+  #Para la variable FireplaceQu los vacíos se ponen como "Not apply" ya que se trata 
+  #de una variable de tipo categórico y puede darse este valor
+  houses$FireplaceQu[is.na(houses$FireplaceQu)]<- "Not apply" 
+  
+  #Para la variable GarageType los vacíos se ponen como "Not apply" ya que se trata de 
+  #una variable de tipo categórico y puede darse este valor, es decir que no tenga garaje
+  houses$GarageType[is.na(houses$GarageType)]<- "Not apply" 
+  
+  #Para la variable GarageQual los vacíos se ponen como "Not apply" ya que se trata de una
+  #variable de tipo categórico y al no tener garaje no aplica
+  houses$GarageQual[is.na(houses$GarageQual)]<- "Not apply" 
+  
+  #Para la variable GarageCond los vacíos se ponen como "Not apply" ya que se trata de una 
+  #variable de tipo categórico e igualmente no aplicaría si no   #tiene garaje la vivienda 
+  houses$GarageCond[is.na(houses$GarageCond)]<- "Not apply" 
+  
+  #Para la variable BsmtFinType2 los vacíos se ponen como "Not apply" ya que se trata de 
+  #una variable de tipo categórico
+  houses$BsmtFinType2[is.na(houses$BsmtFinType2)]<- "Not apply" 
+  
+  #Para la variable BsmtFinSF1 los vacíos se ponen a 0 ya que se trata de una variable 
+  #de tipo numérico
+  houses$BsmtFinSF1[is.na(houses$BsmtFinSF1)]<- 0 
+  
+  #Para la variable BsmtFinSF2 los vacíos se ponen a 0 ya que se trata de una variable
+  #de tipo numérico
+  houses$BsmtFinSF2[is.na(houses$BsmtFinSF2)]<- 0 
+  
+  #Para la variable TotalBsmtSF los vacíos se ponen a 0 ya que se trata de una variable
+  #de tipo numérico
+  houses$TotalBsmtSF[is.na(houses$TotalBsmtSF)]<- 0 
+  
+  #Para la variable BsmtUnfSF los vacíos se ponen a 0 ya que se trata de una variable 
+  #de tipo numérico
+  houses$BsmtUnfSF[is.na(houses$BsmtUnfSF)]<- 0 
+  
+  #Para la variable BsmtFullBath los vacíos se ponen a 0 ya que se trata de una variable
+  #de tipo numérico y se entiende que no tienen baños
+  houses$BsmtFullBath[is.na(houses$BsmtFullBath)]<- 0 
+  
+  #Para la variable BsmtHalfBath los vacíos se ponen a 0 ya que se trata de una variable 
+  #de tipo numérico, se entiende que no tienen aseos
+  houses$BsmtHalfBath[is.na(houses$BsmtHalfBath)]<- 0 
+  
+  #Para la variable GarageYrBlt se decide completar como 0 ya que corresponde a los 
+  #GarageType con NA, que se ha supuesto no tienen garaje
+  houses$GarageYrBlt[is.na(houses$GarageYrBlt)]<- 0 
+  
+  #Para la variable GarageFinish se decide completar como 0 ya que corresponde a los
+  #GarageYrBlt con NA, que se ha supuesto no tienen garaje
+  houses$GarageFinish[is.na(houses$GarageFinish)]<- 0 
+  
+  #Para la variable MasVnrArea se decide completar los vacíos con 0 ya que todos tiene
+  #la variable MasVnrType a None o lo tenían vacío
+  houses$MasVnrArea[is.na(houses$MasVnrArea)]<- 0
+  
+  #Para la variable MSZoning se decide completar con la moda (al ser categórica) 
+  #acorde al vecindario 
+  if(is.na(houses$MSZoning[i]))
+  {
+    houses$MSZoning[i]<-mode(houses$MSZoning[houses$Neighborhood==houses$Neighborhood[i]])
+  }
+   
+  #Para la variable LotFrontage se deciden completar los vacíos con la mediana 
+  #(al ser numérica) por vecindario              
+  if(is.na(houses$LotFrontage[i]))
+  {
+    
+  houses$LotFrontage[i]<-median(houses$LotFrontage[houses$Neighborhood==houses$Neighborhood[i]],
+                                na.rm=TRUE)
+  }
+  
+  #Para la variable Utilities se decide completar con la moda (al ser categórica) acorde 
+  #al vecindario 
+  if(is.na(houses$Utilities[i]))
+  {
+    houses$Utilities[i]<-mode(houses$Utilities[houses$Neighborhood==houses$Neighborhood[i]])
+  }
+  
+  #Para la variable Exterior1st se decide completar con la moda (al ser categórica) acorde 
+  #a la variable RoofMtl 
+  if(is.na(houses$Exterior1st[i]))
+  {
+    houses$Exterior1st[i]<-mode(houses$Exterior1st[houses$RoofMatl==houses$RoofMatl[i]])
+  }
+  
+  #Para la variable Exterior2nd se decide completar con la moda (al ser categórica) acorde
+  #a la variable RoofMtl 
+  if(is.na(houses$Exterior2nd[i]))
+  {
+    houses$Exterior2nd[i]<- mode(houses$Exterior2nd[houses$RoofMatl==houses$RoofMatl[i]])
+  }
+  
+ 
+  
+  #Para la variable Functional se decide completar con la moda (al ser categórica) 
+  if(is.na(houses$Functional[i]))
+  {
+    houses$Functional[i]<-mode(houses$Functional)
+  }
+  
+}
+```
+
+En ocasiones, se suele utilizar otros metodos de imputación de los vecinos más cercanos (Knn etc)
+ #Para la variable Electrical se detecta solo 1 vacío, se decide completar con la moda (al ser categórica) acorde al vecindario partiendo de la        #hipótesis de que la instalación de los servicios publicos en el vecindario es común
+```{r}
+library(VIM)
+distancia=c("BldgType","Neighborhood", "MSZoning", "GrLivArea", "Heating", "CentralAir")
+                                                                     
+houses <- kNN(houses, variable = c("Electrical"),  k=3, dist_var = distancia, trace= FALSE)
+```
+
+Aplicando la moda a esta misma variables la gestión de valores nulos hubiera quedado de la siguiente forma: 
+
+```{r}
+#for (i in 1:nrow(houses))
+# if(is.na(houses$Electrical[i]))
+#  {
+#    houses$Electrical[i]<-
+#    mode(houses$Electrical[houses$Neighborhood==houses$Neighborhood[i]])
+#  }
+#}
+```
+
+
+```{r}
+colSums(houses==0)
+```
+
+Se observa que existen valores a 0 en las siguientes variables: 
+
+BsmtFinSF2 , BsmtUnfSF, TotalBsmtSF, LowQualFinSF, BsmtFullBath, BsmtHalfBath, HalfBath, BedroomAbvGr, KitchenAbvGr, Fireplaces, GarageCars, GarageArea, WoodDeckSF, OpenPorchSF,
+nclosedPorch, MiscVal, X3SsnPorch, ScreenPorch
+
+Para todas ellas, pueden un valor perfectamente valido , ya que se refieren al nº de metros, o de habitacion/plazas de garange o chimeneas y consideramos que dichos valores no requieren de ningún tratamiento.
+
+Las variables que son númericas (años, o metros cuadrados etc) tienen como tipo de dato el que le correponde por lo que no hacemos transformación.
+Sin embargo, las  variables cualialitativas/categoricas que son cadenas de textos y deberíamos pasar a variables de tipo factor en R. Se realiza la conversión mediante el siguiente bucle.
+
+
+```{r}
+for(i in 1:ncol(houses)) {
+  if (is.character(houses[,i])){
+    houses[,i] <- as.factor(houses[,i])
+  }
+}
+
+#Se podria mostrar de nuevo la siguiente instrucción para ver los factors convertidos
+#sapply(houses, function(x) class(x))
+
+```
+
+Se revisa el total de valores unicos por variable 
+```{r warning=FALSE,error=FALSE,message=FALSE}
+apply(houses,2, function(x) length(unique(x)))
+```
+
+## Outliers (Extreme scores) - Identificación y tratamiento de valores extremos.
+
+Las variables del dataset pueden tener valores anómalos o valores atípicos.
+
+Un extreme score / outlier  un valor que es bastante diferente  (por encima o por debajo)  de los valores restantes de la muestra y no sigue la distribución de los datos. Puede ser un error en la toma de los datos o bién puede  ser algún caso excepcional que deba  analizarse porque nos proporcione valor añadido al estudio.
+Para identificarlos, podemos hacer uso de dos opciones: representar un diagrama de caja por cada variable y ver qué valores distan mucho del rango intercuartílico
+(la caja) o una función en R denominada boxplot_stats
+
+Si se consideran que son anómalos ó que distorsionan la muestra, se pueden eliminar.
+Si se considera que puede ser de un error de conversión entre medidas diferentes(metros/pies etc. ) puede realizarse algúna operación matemática para arreglarlo.
+
+Así, se mostrarán sólo los valores atípicos para aquellas variables que los contienen:
+```{r}
+par(mfrow=c(1,3))
+for(i in 1:ncol(houses)) {
+  if (is.numeric(houses[,i])){
+  boxplot(houses[,i], main =  colnames(houses)[i] ,width = 50 ,
+          xlab=colnames(houses)[i],col= "green3")
+  }
+}
+```
+Se observan outliers en  las siguientes variables : 
+* MSSubClass - Esta variable son códigos que identifican distintos tipos de vivienda. Por tanto no se puede considerar que sean valores extremos o anómalos, ya que son códigos asignados por la codificación pactada. No requiere tratamiento adicional
+
+* LotFrontage - Esta variable indica el nº de pies (longitud) . También consideramos que puede haber propiedades en venta que tengan un mayor nº de pie. No requiere tratamiento.
+
+* LotArea - Esta variable indica el nº de metros cuadrados de la parcela. Aunque existen valores que están alejados de la media del resto de viviendas, vemos lógico que puedan ser 
+un nº valido. No requiere tratamiento.
+
+* OVerallQual : Los valores estan dentro de los permitidos , de 0-10 , aunque la mayoria se situan en la calidad media , pero este se correponde con alguna propiedad que no estará en buenas condiciones. No requiere tratamiento , ya que es nos da referencia  de los precios con dicha calidad.
+
+* OverCond : Es similar , son todos valores permitidos , aunque la mayoria esten entre los valores intermedios.No requiere tratamiento.
+
+* YearBuilt : Año de construcción. En este caso , se opta por quitarlos porque distan mucho de la media situados entre los años 1950 - 2000 aproximaamente, por lo que  puede distorsionar la muestra.
+
+```{r}
+
+outliers_yb <- boxplot.stats(houses$YearBuilt)$out
+outliers_yb
+
+idx_out<- which(houses$YearBuilt %in% outliers_yb)
+#Se eliminan las observaciones relativos a dichos outliers 
+houses <- houses[ -idx_out, ]
+```
+* MassVnrArea : Nº de metros de mamposteria . Se considera que aunque haya outliers , puede ser que correspondan con las casas más grandes . No se realiza tratamiento.
+
+* BsmtFinSF1 - Se considera que puede ser normal con el resto de las variables . No se realiza tratiemtno (Son el nº de metros del sotano acabados)
+* BsmtFinSF2 - Se considera que puede ser normal con el resto de las variables . No se realiza tratiemtno (Son el nº de metros del sotano2 acabados)
+* BsmtUnSF - Se considera que puede ser normal con el resto de las variables . No se realiza tratiemtno 
+* TotalBsmtSF - idem a las anteriores atributos. El nº de metros puede ser elevado en propiedades muy grandes . No se realiza tratamiento.
+
+* 1stFlrSF: Metros cuadrados de la primera planta - Idem, puede ser normal esos valores en propiedades grandes y por tanto las que mayor precio tengan.
+* 2ndFlrSF: Metros cuadrados de las segunda planta Idem, puede ser normal esos valores en propiedades grandes y por tanto las que mayor precio tengan.
+
+* GrLiveArea - idem a las anteriores atributos. El nº de metros puede ser elevado en propiedades muy grandes . No se realiza tratamiento.
+
+* BsmtFullBath  - El nº de baños . Es un nº perfectamente valido (3 baños completos en una casa grande ) . No se realiza tratamiento
+
+* BsmtHalfBath - Aqui lo que se observa es que la mayoria no tiene. Esta columna será una de no las quitemos ya que no parece que vaya aportarnos. 
+
+```{r}
+houses2 <- houses[ , -houses$BsmtHalfBath ]
+
+```
+* LowQualFinSF - Son valores validos, aunque la mayoría son cero. Son los metros de baja calidad que han dejados .De momento no se realiza tratamiento (esta columna seguramente no la utilicemos y la quitarmos)
+
+* BedroomAbvGr - Son valores validos, son el nº de habitaciones en las plantas . No se requiere tratamiento.
+
+* TotRmsAbrGr - Son valores validos. Es el nº de habitaciones totales sin contar la casa que tiene la propiedad. Los valores extremos se corresponderán con las más grandes seguramente. 12  y 14 habitaciones no suele ser lo habitual.
+
+* Fireplaces - Tambien dejaremos ya que no es un valor tan extremo (3 chimeneas).Seguramente de las casas que se salen fuera de lo normal. 
+
+* GarageCars - También tiene un outlier que es 4 plazas de garage, pero consideramos que puede ser una valor valido. 
+
+```{r}
+outliers_gc <- boxplot.stats(houses$GarageCars)$out
+outliers_gc
+```
+
+* WoodDeckSF: Area de cubierta de madera (metros cuadrados)  Consideramos que pueden ser valores validos.No requiere tratamiento . Además esta columna no la vamos a tener en cuenta para el estudio.
+
+
+* OpenPorchSF: Area del porche abierto (metros cuadrados) Consideramos que pueden ser valores validos.No requiere tratamiento .
+
+```{r}
+outliers_op <- boxplot.stats(houses$OpenPorchSF)$out
+outliers_op
+
+```
+* EnclosedPorch: Area del porche cerrado (metros cuadrados) Consideramos que pueden ser valores validos.No requiere tratamiento . Además esta columna no la vamos a tener en cuenta para el estudio.
+* 3SsnPorch: Area del porche 3 estaciones (metros cuadrados) Consideramos que pueden ser valores validos.No requiere tratamiento . Además esta columna no la vamos a tener en cuenta para el estudio.
+* ScreenPorch: Area de la pantalla del porches (metros cuadrados) Consideramos que pueden ser valores validos.No requiere tratamiento . Además esta columna no la vamos a tener en cuenta para el estudio. 
+
+* PoolArea -  La mayoria no tiene piscina  y por tanto el resto aparecen como outliers. Seguramente esta columna completa la quitaremos. 
+
+* MiscVal  - La mayoria son cero , pero el resto se refiere al importe en caractaristicas adicionales por lo que creo que se debe mantener.
+```{r}
+outliers_mv <- boxplot.stats(houses$MiscVal)$out
+outliers_mv
+
+```
+
+* SalesPrices - Hay valores que superan la media habitual de las ventas, y los vamos a descartar puesto que para este estudio , hacen que la media se distorsiones 
+ 
+```{r}
+outliers_sp <- boxplot.stats(houses$SalePrice)$out
+outliers_sp
+idx_out_sp<- which(houses$SalePrice %in% outliers_sp)
+#Se eliminan las observaciones relativos a dichos outliers 
+houses <- houses[ -idx_out_sp, ]
+
+```
+***********************
+# Analisis de datos
+**********************
+
+## Selección de los grupos de datos que se quieren analizar/comparar (planificación los análisis a aplicar).
+
+Con el fin de ver que variables nos interesan analizar para ver como explican la variación de precio de las casas de Ames , podremos hacer primero un analisis exploratorio y posterioremente métodos de analisis y estadististicos para validar lo que se se observa.
+
+Primero se resumen las variables cuantitativas o cualitativas que tenemos.
+
+```{r}
+names <- colnames(houses)
+
+#Definimos las variables cualitativas y las cuantitativas
+varCualitativas <- which(names =="MSZoning" | names =="Street" | names =="Alley" 
+                        | names == "LotShape"   | names =="LandContour" 
+                        | names =="Utilities" 
+                        | names =="LotConfig"   | names =="LandSlope" 
+                        | names =="Neighborhood" |   names =="Condition1"   
+                        | names =="Condition2" |  names =="BldgType"
+                        | names =="HouseStyle" | names == "RoofStyle"
+                        | names =="RoofMatl" | names == "Exterior1st"
+                        | names =="Exterior2nd" | names == "Foundation"
+                        | names =="MasVnrType" | names == "RoofStyle"
+                        | names =="ExterQual" | names == "ExterCond"  
+                        | names =="BsmtQual" | names == "BsmtCond" 
+                        | names =="BsmtExposure" | names == "BsmtFinType1" 
+                        | names =="BsmtFinType2" | names == "Heating" 
+                        | names =="HeatingQC" | names == "CentralAir" 
+                        | names =="Electrical" | names == "KitchenQual" 
+                        | names =="Functional" | names == "FireplaceQu"
+                        | names =="GarageType" | names == "GarageFinish"        
+                        | names =="GarageQual" | names == "GarageCond"
+                        | names =="PavedDrive" | names == "PoolQC"
+                        | names =="Fence" | names == "MiscFeature"
+                        | names =="SaleType" | names == "SaleCondition")
+
+
+varCuantitativas <- which(names == "MSSubClass" | names == "LotFrontage" 
+                          | names ==  "LotArea" | names == "OverallQual" 
+                          | names ==  "OverallCond" |names == "YearBuilt" 
+                          | names == "YearRemodAdd"  |names == "MasVnrArea" 
+                          | names =="BsmtFinSF1" | names == "BsmtFinSF2"   
+                          | names =="BsmtUnfSF" | names == "TotalBsmtSF" 
+                          | names =="X1stFlrSF" | names == "X2ndFlrSF"  
+                          | names =="LowQualFinSF" | names == "GrLivArea"  
+                          | names =="BsmtFullBath" | names == "FullBath"  
+                          | names =="HalfBath" | names == "BedroomAbvGr" 
+                          | names =="KitchenAbvGr" | names == "BsmtHalfBath" 
+                          | names =="TotRmsAbvGrd" | names == "Fireplaces" 
+                          | names =="GarageYrBlt" | names == "GarageCars" 
+                          | names =="GarageArea" | names == "WoodDeckSF" 
+                          | names =="OpenPorchSF" | names == "EnclosedPorch" 
+                          | names =="X3SsnPorch" | names == "ScreenPorch" 
+                          | names =="MiscVal" | names == "MoSold" 
+                          | names =="PoolArea" | names == "YrSold" 
+                          | names == "SalePrice") 
+# Se hace un resumen de los distintos tipos valores de cada tipo.(Cualitativas)
+options(knitr.kable.NA = '')
+#kable(summary(houses)[,varCualitativas],digits=2, align='l', 
+#caption="Resumen  descriptivo de variables cualitativas")
+#kable(summary(houses)[,varCuantitativas],
+#digits=2, align='l', caption="Resumen  descriptivo de variables cuantitativas")
+
+
+# Ahora se puede mostrar una tabla con medidas robustas/ no robustas 
+# Calculamos la media para todas las variables.
+mean.n <- as.vector(sapply( houses[,varCuantitativas],mean,na.rm=TRUE ) )
+# Calculamos la desviacion estandar para todas las variables.
+std.n <- as.vector(sapply( houses[,varCuantitativas],sd, na.rm=TRUE))
+# Calculamos la mediana para todas las variables.
+median.n <- as.vector(sapply( houses[,varCuantitativas],median, na.rm=TRUE))
+# Calculamos la media recortadas y winsor
+mean.trim.0.05 <- as.vector(sapply( houses[,varCuantitativas],mean, na.rm=TRUE, trim=0.05))
+mean.winsor.0.05 <- as.vector(sapply( houses[,varCuantitativas],winsor.mean, na.rm=TRUE,
+                                      trim=0.05))
+# Los parametros IQR (rango intercuartil) 
+IQR.n <- as.vector(sapply(houses[,varCuantitativas],IQR, na.rm=TRUE))
+# Y desviación media absoluta  desde la mediana. 
+mad.n <- as.vector(sapply( houses[,varCuantitativas],mad, na.rm=TRUE))
+kable(data.frame(variables= names(houses)[varCuantitativas],Media = mean.n, 
+                 Mediana = median.n,Media.recort.0.05= mean.trim.0.05,
+                 Media.winsor.0.05= mean.winsor.0.05),
+      digits=2, caption="Estimaciones media - Tendencia Central")
+
+kable(data.frame(variables= names(houses)[varCuantitativas],
+Desv.Standard = std.n,
+IQR = IQR.n,
+MAD = mad.n),
+digits=2, caption="Estimaciones de Dispersión")
+```
+NOTA: En este caso las medidas de MAD = 0 ya nos da una idea que no al no haber desviacion , pueden no influir en nuestro estudio , por lo que la mayoría de esas columnas las eliminaremos. 
+ 
+Para las variables cualitativas podemos ver como se distribuyen las categorias por frecuencias.(Absolutas o relativas)
+
+```{r}
+par(mfrow=c(2,2))
+for(i in 1:ncol(houses)) {
+  # Variable cualitativa - Grafico de barras
+  if (is.factor(houses[,i])){
+       fabs <- table(houses[i])
+       frel <- fabs/n.ind
+      # barplot(fabs,ylab="Frec.absol",main=colnames(houses)[i],
+      # col=c('grey','white','lightblue','purple','mistyrose','blue'))
+       barplot(frel,ylab="Frec.relativas", density = 25 ,main=colnames(houses)[i],
+               col=c('grey','white','lightblue','purple1','red','blue'))
+  }
+}
+```
+
+Y para las variables cuantitativas , podemos ver :
+
+```{r}
+par(mfrow=c(2,3))
+for(i in 1:ncol(houses)) {
+  # Variable cualitativa - Grafico de barras
+  if (is.numeric(houses[,i])){
+       fabs <- table(houses[i])
+       frel <- fabs/n.ind
+       hist(x=houses[,i], breaks=15, main=colnames(houses)[i], xlab = colnames(houses)[i],
+            ylab="Frecuencias", las=1, col = "blue", density = 35)
+  }
+}
+```
+
+En relación a la dimensionalidad del dataset y tras el estudio de los atributos se decide crear para el total baños una variable nueva con el sumatorio de todos los baños:
+
+```{r}
+# Se calcula el total de baños en la propiedad en una nueva variable
+houses$TotalBaths <- houses$BsmtFullBath + houses$BsmtHalfBath + houses$FullBath + houses$HalfBath
+```
+
+Para nuestro análisis, vamos a realizar un análisis previo exploratorio con determinadas columnas, para la relación con el precio de la casa y otras variables que consideramos que pueden ser interesantes : 
+
+### Precio - Total viviendas.
+
+Pasamos a ver una distribución de nº de casas por franja de precio: 
+
+```{r}
+  options(scipen=1000) 
+  ggplot(houses, aes(x = SalePrice, fill = ..count..)) +
+  geom_histogram(binwidth = 15000) +
+  ggtitle("Distribución del nº de casa / Precio (SalePrice)") +
+  ylab("Nº de casas") 
+  xlab("Precio de Venta") + 
+  theme(plot.title = element_text(hjust = 0.5))
+```
+
+El mayor volumen de propiedades se en cuentra por debajo de los 200.000 USD.
+En el juego de datos original existían algunas propiedades que sobrepasaban los 600.000 USD que hemos eliminado para no distorsionar el precio medio.
+
+### Año construcción - Total de precio.
+
+La mayoría de las casas están entre el año 1950 y 1970 o son posteriores al año 2000.
+
+```{r}
+yr<-ggplot(houses, aes(x =YearBuilt, y = ..count..))+geom_bar(width = 1, 
+                                              colour="blue", fill="grey")
+yr+xlab("Años")+ylab("Número de propiedades")+theme(axis.text.x  = element_text(angle=45,
+      hjust = 1)) + labs(title="Propiedades por años construcción",x="Años construcción")
+```
+
+Discretización 
+
+```{r}
+housesanio<-houses
+housesanio$YearBuilt <- cut(housesanio$YearBuilt, breaks=c(1884,1950,1970,1990,2000,Inf), 
+                            labels=c('< 1950','1950-1970','1970-1990', '1990-2000', '>2000'))
+table(housesanio$YearBuilt)
+```
+
+
+```{r}
+granios <- ggplot(housesanio, aes(x =YearBuilt)) + geom_bar(width=0.5, colour="blue", 
+                                                      fill="blue", na.omit = "TRUE" )
+granios+xlab("Años")+ylab("Número de propiedades")+theme(axis.text.x=element_text(angle=45, 
+       hjust = 1)) + labs(title="Propiedades por años construcción",x="Años construcción")
+```
+
+### Precio - Tipo de Vivienda.
+
+Grafico diferenciando el precio entre los distintos tipos de edificación de las casas ( Familiares, Duplex, etc)
+
+```{r}
+ggplot(houses, mapping = aes(x =SalePrice, colour = BldgType)) + geom_histogram(binwidth = 25000)+
+  facet_wrap(~BldgType,nrow=3, ncol=2)+theme(axis.text.x  = element_text(angle=50, hjust = 1))  
+```
+
+Se precia que el tipo de vivienda con mayor volumen es la del tipo 1Fam cuya distribución de precios se encuentra en un rango inferior a los 200.000USD. 
+
+### Tipo de Zona / Tipo de Vivienda / 
+
+```{r}
+ggplot(houses ,aes(MSZoning,fill=BldgType), heigth = 0.4)+geom_bar(position="fill")
+```
+Se puede ver que existe diferencias en el tipo de vivienda dependiendo de la zona, aunque se aprecia que el volumen mayor es la de tipo 1Fam.
+Así en zona residencial de alta densidad la vivienda fuera de 1Fam (Unifamiliar) es de tipo duplex, sin embargo en zona residencial baja densidad es de tipo TwnhsE  y 2fmCon.
+En el FV( Residencial en zonas rurales) es donde hay más volumen de TwnhsH 
+
+### Tipo de Zona / Tipo de Vivienda y por los distintos barrios
+
+```{r}
+ggplot(houses ,aes(x=MSZoning,fill=BldgType))+geom_bar(position="fill")+facet_wrap(~Neighborhood, nrow=5, ncol= 5)+
+  theme(axis.text.x  = element_text(angle=90, hjust = 1))+ 
+  ggtitle("Grafico de nº de casas en los distintos barrios,por Tipo de Vivienda /Zona ") +
+  ylab("Nº de casas") +
+  xlab("Zona/Ubicación") 
+```
+
+Si añadimos el tipo de barrio a la gráfica anterior se observa que la distribución del tipo de vivienda también varía por barrios, si bien domina en casi todos los barrios el tipo 1Fam, hay barrios que solo tienen tipo TwnhsE o Twnhs unicamente.
+
+En las zonas residenciales RL /RM es donde existen más casas de tipo TwnhsE y en determinados barrios que apunta a que sean los que mayor precio tengan también.
+
+La viviendas de tipo 2fmCon (que son las viviendas transformadas de una vivienda original para una familia en dos viviendas) de da en determinados barrios (OldTown, SWISU)
+
+Estas variables, vemos que pueden ser indicativas de variaciones en el precio , y por tanto en los métodos de comparación estadisticos , utilizaremos estar variables para demostrar que son explicativas del precio. 
+
+```{r}
+ggplot(houses, aes(x = SalePrice, fill = BldgType), na.rm = TRUE) +
+  geom_histogram(position="stack", bins = 15)+facet_wrap(~CentralAir)+
+  ggtitle("Grafico de nº de casas por precio y si tienen aire acondicionado o no") +
+  ylab("Nº de casas") +
+  xlab("Variacion de precios según si tiene aire acondicionado o no") 
+```
+
+Se observa que la mayoria de las propiedades cuentan con aire acondicionado y que la distribución del precio , dependiendo de si tienen o no aire acondicindo es diferente. Ya se aprecia, que el precio de las que no tienen aire acondicinado están en un franja de precio menor.
+Más adelante , haremos un contraste de hipotesis para comprobar que la media del precio de las casas, es diferente si tiene aire o no .
+
+
+### Precio /Calidad Vivienda 
+
+Se diferencian por colores los distintos tipos de vivienda. 
+
+```{r}
+ggplot(houses, aes(SalePrice, OverallQual	, colour = BldgType	)) + geom_boxplot()
+ggplot(data=houses[!is.na(houses$SalePrice),], aes(x=factor(OverallQual), y=SalePrice))+
+        geom_boxplot(col='blue') + labs(x='Overall Quality') +
+        scale_y_continuous(breaks= seq(0, 800000, by=100000))
+```
+
+En cuanto a la relación entre calidad de la propiedad y el precio, este aumenta de forma directa con la calidad como se puede observar en la gráfica anterior.
+
+### Precio /Año de Contrucción  y Precio /Año de Remodelación
+
+Se diferencian por colores los distintos tipos de vivienda.
+```{r}
+ggplot(houses, aes(YearBuilt, SalePrice	, colour = BldgType	)) + geom_point() +  
+  geom_smooth(color = "firebrick", method = 'lm') 
+ggplot(houses, aes(YearRemodAdd, SalePrice	, colour = BldgType	)) + 
+  geom_point() + geom_smooth(color = "firebrick", method = 'lm') 
+```
+
+Igualmente para la relación del año de construcción con el precio de la propiedad según el tipo de esta, se ve un ligero incremento con los años del precio, es decir para propiedades construidas en años recientes el precio es mayor para el mismo tipo de vivienda. 
+
+Y en la gráfica del año de remodelación , también se observa que la variación de precio aumenta si se ha remodelado recientemente. 
+
+Son variables explicativas del precio de la vivienda. Posteriormente , se comprobará si el precio de construcción y de remodelación tienen correlación (PCA) y se utilizarán en otros métodos (LM) etc.
+
+### Precio /Area del Garage 
+
+Se diferencian por colores el nº de plazas de garage
+```{r}
+ggplot(houses, aes(GarageArea, SalePrice	, colour = GarageCars	)) + geom_point() +
+  geom_smooth(color = "blue", method = 'lm') 
+```
+
+La relación del precio con el area del garaje igualmente es incremental, aumentando este a medida que el número de plazas de aparcamiento de la vivienda es mayor.
+
+
+### Precio /GrLiveArea (Area habitable)
+
+```{r}
+
+g1<- ggplot(houses, aes(SalePrice, GrLivArea	, colour = BldgType	)) + geom_point() + 
+  geom_smooth(color = "firebrick", method = 'lm') 
+g2<-ggplot(houses, aes(SalePrice, GrLivArea	, colour = MSZoning	)) + geom_point() + 
+  geom_smooth(color = "firebrick", method = 'lm') 
+
+grid.arrange(g1,g2)
+```
+Se observa claramente como según aumenta el nº de metros de area habitable, el precio se incrementa y que las casas de distintos tipos tambien se distribuyen en cluster diferenciados por lo que el precio medio variará entre ellas.
+
+En el contraste de hipotesis planteado más adelante comprobaremos que efectivamente la diferencia entre medias se confirma. 
+
+En la segunda gráfica, también se observa que el precio de la vivienda en función del nº de metros habitables, y diferenciando por zona, se ve que el precio medio entre zonas es diferente . Igualmente se demostrará en el contraste de hipotesis.
+
+
+### Otras distribuciones 
+
+```{r}
+# Distribucion de la variable SalePrice en función de Tipo de Edificio/propiedad 
+
+plotbyBldgType <- ggplot(houses,aes(BldgType,SalePrice))+
+  geom_boxplot(fill="purple",color="gray60") +
+  scale_fill_manual(values=c("green1","green3","gray60","lightblue","blue","yellow"))
+
+grid.arrange(plotbyBldgType,ncol=1)
+
+# Distribucion de la variable SalePrice vs Neighborhood
+plotbyNeigh <-ggplot(houses,aes(Neighborhood, SalePrice))+
+  geom_boxplot(fill="blue",color="gray60") +ggtitle("Relación SalePrices vs Neighborhood")+
+theme(axis.text.x  = element_text(angle=45, hjust = 1))
+
+grid.arrange(plotbyNeigh,ncol=1)
+
+
+# Distribucion de la variable SalePrice vs CentrailAir
+plotbyCentralAir <-ggplot(houses,aes(CentralAir, SalePrice))+
+  geom_boxplot(fill="blue",color="gray60") +ggtitle("Relación SalePrices vs CentralAir")+
+theme(axis.text.x  = element_text(angle=45, hjust = 1))
+
+grid.arrange(plotbyCentralAir,ncol=1)
+
+# Distribucion de la variable SalePrice vs Heatingg
+plotbyHeating <-ggplot(houses,aes(Heating, SalePrice))+
+  geom_boxplot(fill="blue",color="gray60") +ggtitle("Relación SalePrices vs Heating")+
+theme(axis.text.x  = element_text(angle=45, hjust = 1))
+
+grid.arrange(plotbyHeating,ncol=1)
+
+```
+
+En la relación del tipo de vivienda con el precio, se aprecia que los mayores precios se encuentra en el tipo 1Fam si bien este es el más frecuente.
+En cuanto al vecindario se ve claramente que hay vecindarios que destacan por ser donde se encuentran las propiedades más caras.
+Y en cuanto al precio por Aire Acondicionado es distinto a los que no tienen, siendo mayor
+los que tienen aire acondicionado (suelen ser la mayoría)
+Y en cuanto al precio por tipo de calefacción  también varía siendo mayor el precio los que tienen tipo GasA.
+
+## Comprobación de la normalidad y homogeneidad de la varianza.
+
+```{r}
+alpha = 0.05
+col.names = colnames(houses)
+for (i in 1:ncol(houses)) {
+if (i == 1) cat("Variables no tienen distribución normal:\n")
+if (is.integer(houses[,i]) | is.numeric(houses[,i])) {
+   p_val = ad.test(houses[,i])$p.value
+   if (p_val < alpha) {
+       cat(col.names[i])
+       # Format output
+   if (i < ncol(houses) - 1) cat(", ")
+   if (i %% 3 == 0) cat("\n")
+}
+}
+}
+```
+Se observan las variables que no tienen distribución normal.
+
+### Revisión normalización con graficas de quantile-quantile plot y el histograma.
+
+```{r}
+par(mfrow=c(2,2))
+for(i in 1:ncol(houses)) {
+if (is.numeric(houses[,i])){
+qqnorm(houses[,i],main = paste("Normal Q-Q Plot for ",colnames(houses)[i]))
+qqline(houses[,i],col="red")
+hist(houses[,i],
+main=paste("Histogram for ", colnames(houses)[i]),
+xlab=colnames(houses)[i], freq = FALSE)
+}
+}
+```
+
+Revisando los resultados algunas variables podrían ser normalizadas, lo estudiamos a continuación con el test de Shapiro.
+
+#### Test Shapiro
+Saphiro-test - Shapiro-Wilk se usa para contrastar si un conjunto de datos siguen una distribución normal o no
+La hipotesis son : 
+* Nula H0: los datos provienen de una distribución normal
+* Alternativa H1: los datos no provienen de una distribución normal
+```{r}
+# Vamos a ver si son los datos del SalePrice normales o no.
+shapiro.test(houses$SalePrice)
+```
+En este caso el shapiro.test nos indica que el p-value bastante pequeño , menor al 0,05 por lo que tenemos que descartar la hipotesis nula a favor de la alternativa. 
+Por tanto no es normal la distribución del precio de venta.
+```{r}
+# Vamos a ver si son los datos del SalePrice normales o no.
+shapiro.test(houses$OverallQual)
+```
+
+```{r}
+# Vamos a ver si son los datos del SalePrice normales o no.
+shapiro.test(houses$GrLivArea)
+```
+
+```{r}
+# Vamos a ver si son los datos del SalePrice normales o no.
+shapiro.test(houses$YearBuilt)
+```
+
+Podemos apreciar que todas ellas están por debajo del coeficiente 0.05, es decir se rechaza la hipótesis nula pudiendo confirmar que no están normalizadas.
+
+## Aplicación de pruebas estadísticas para comparar los grupos de datos. En función de los datos y el objetivo del estudio, aplicar pruebas de contraste de hipótesis, correlaciones, regresiones, etc. Aplicar al menos tres métodos de análisis diferentes.
+
+
+### Matriz de correlación entre variables
+
+Vamos a realizar el análisis de correlacción, para lo se va a utilizar la función pairs.panels(), de cara a  visualizar los dispersiogramas con una línea de ajuste, histogramas para ver la distribución de las variables, y además los coeficientes de correlación.
+
+```{r}
+# pasamos a numéricos algunos factor
+
+houses$CentralAirnum <- as.numeric(factor(houses$CentralAir, 
+                                  levels = c("N", "Y"),
+                                  labels = c(0,1) ,ordered = TRUE))
+houses$GarageQualnum <- as.numeric(factor(houses$GarageQual, 
+                                  levels = c("Ex","Gd", "TA","Fa", "Po", "Not apply"),
+                                  labels = c(5,4,3,2,1,0) ,ordered = TRUE))
+houses$GarageCondnum <- as.numeric(factor(houses$GarageCond, 
+                                  levels = c("Ex", "Gd", "TA", "Fa","Po","Not apply"),
+                                  labels = c(5,4,3,2,1,0) ,ordered = TRUE))
+houses$ExterCondnum <- as.numeric(factor(houses$ExterCond, 
+                                  levels = c("Ex","Gd", "TA", "Fa", "Po"),
+                                  labels = c(5,4,3,2,1) ,ordered = TRUE))
+houses$HeatingQCnum <- as.numeric(factor(houses$HeatingQC, 
+                                  levels = c("Ex", "Gd", "TA", "Fa","Po"),
+                                  labels = c(5,4,3,2,1) ,ordered = TRUE))
+houses$PoolQCnum <- as.numeric(factor(houses$PoolQC, 
+                                  levels = c("Ex","Gd","Fa","Not apply"),
+                                  labels = c(3,2,1,0) ,ordered = TRUE))
+houses$BsmtQualnum <- as.numeric(factor(houses$BsmtQual, 
+                                  levels = c("Ex","Gd","Fa","Not apply"),
+                                  labels = c(3,2,1,0) ,ordered = TRUE))
+
+
+
+```
+
+Visualizamos algnos dispersiogramas con una línea de ajuste, histogramas para ver la distribución de las variables, y además los coeficientes de correlación
+
+Seleccionamos algunas variables para la correlación
+```{r}
+correl <- c('SalePrice',  'YearBuilt','ExterCondnum','HeatingQCnum', 
+                'CentralAirnum','GrLivArea','BedroomAbvGr','KitchenAbvGr',
+                'TotRmsAbvGrd','Fireplaces','GarageCondnum', 'GarageQualnum',
+                'GarageArea','OpenPorchSF','PoolArea','OverallQual', 
+                 'BsmtFinSF1', 'YearRemodAdd','FullBath','GarageCars',
+                 'BsmtFullBath','TotalBsmtSF','PoolQCnum', 'BsmtQualnum',
+                 'LotFrontage', 'MasVnrArea','LotArea', 'X1stFlrSF')
+heat <- houses[,correl]
+```
+
+heatmap con Saleprice
+```{r}
+options(repr.plot.width=10, repr.plot.height=10)
+qplot(x=Var1, y=Var2, data=melt(cor(heat, use="p")), fill=value, geom="tile") +
+   scale_fill_gradient2(low = "green", high = "red", mid = "white", 
+   midpoint = 0, limit = c(-1,1), space = "Lab", 
+   name="Correlacion entre variables") +
+   theme_minimal()+ 
+   theme(axis.text.x = element_text(angle = 45, vjust = 1, size = 7, hjust = 1))+
+   coord_fixed()+
+   ggtitle("Mapa de Calor/Correlación") +
+   theme(plot.title = element_text(hjust = 0.4))
+```
+Correlacionan en positivo con SalePrice -> X1stFlrSF, LotArea, MasVnrArea, LotFrontage, TotalBsmtSF, GarageCars, FullBath, YearRemodAdd, BsmtFinSF1, OverallQual, OpenPorchSF, GarageArea, Fireplaces, TotRmsAbvGrd, BedroomAbvGr, GrLivArea, CentralAir, YearBuilt. 
+
+Asimismo se aprecian variables que no correlacionan como ExterCond, KitchenAbvGr, PoolArea, PoolQC.
+
+Creamos un dataset con las variables que correlacionan y estudiamos mediante componentes principales, aplicando PCA, el porcentaje con el cual contribuye cada variable.
+
+```{r}
+correlpca <- c( 'YearBuilt','CentralAirnum','GrLivArea','BedroomAbvGr',
+                'TotRmsAbvGrd','Fireplaces','GarageArea','OpenPorchSF', 
+                'OverallQual', 'BsmtFinSF1','YearRemodAdd','FullBath',
+                'GarageCars','BsmtFullBath','TotalBsmtSF', 'X1stFlrSF')
+heatpca <- houses[,correlpca]
+```
+
+###  PCA 
+
+Con el fin de reducir la dimension,  vamos a llevar a cabo un estudio de análisis de componentes principales o PCA, en sus siglas en inglés. 
+PCA se trata de una transformación lineal k-dimensional del espacio paramétrico a un espacio n-dimensional.
+
+```{r}
+res.pca <- PCA(heatpca,  graph = FALSE)
+```
+
+Visualizamos el porcentage de variación de la información que somos capaces de explicar con los diferentes componentes principales:
+
+```{r}
+fviz_screeplot(res.pca, addlabels = TRUE, ylim = c(0, 40))
+```
+
+Con los primeros dos componentes PC1 y PC2 se explica el 50% de la varianza y con PC3 el 60%.
+
+Se visualizan las variables de estos 3 primeros componentes.
+
+```{r}
+var <- get_pca_var(res.pca)
+# Contribucion PC1
+fviz_contrib(res.pca, choice = "var", axes = 1, top = 10)
+# Contribucion PC2
+fviz_contrib(res.pca, choice = "var", axes = 2, top = 10)
+# Contribucion PC3
+fviz_contrib(res.pca, choice = "var", axes = 3, top = 10)
+fviz_pca_var(res.pca, col.var="contrib",
+             gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"),
+             repel = TRUE # Avoid text overlapping)
+             ) + theme_minimal() + ggtitle("Variables - PCA")
+
+```
+
+En el biplot de los dos componentes principales más importantes podemos observar que variables contribuyen más a formar cada uno de ellos.
+
+Para el PC1, se aprecia que la variables principales son OverQuall (Calidad Vivienda), GrLivearea (Nº de metros habitables), GarageCars (Nº de plazas de aparcamiento), GarageArea (Nº de metros del garaje), FullBath (Nº de baños), X1stFlrSF (Nº metros habitables en la primera plantas) y TotalBsmtSF (Nº de metros del sotano totales).
+
+Para el PC2, las variables BedroomAbvGr (Nº de habitaciones en primera planta), TotRmsAbvGrd (Nº totales de habitaciones), BsmtFullBath (Nº de baños completos), BsmtFinSF1 (Metros acabados del sotano9), y GrLivArea (Nº de metros de area habitable).
+
+En PC3 se observa que destacan algo más el año de remodelación y de construcción  junto a BsmtFinSF1 (Nº de metros del sotano acabados),BsmtFullBath (Nº de baños).
+
+Continuando con el PCA se va a revisar mediante cluster la distribución por atributos y se va a verificar los outliers una vez que se han eliminado para algunas variables.
+
+### Clustering
+
+En una primera aproximación vamos a relizar un análisis con clusters para a través de la visualización de estos poder hacernos una idea de cual sería la agrupación en base a las variables y confirmar si después de la eliminación de outliers sigue apareciendo algún elemento atípico o extremo. 
+La función "fviz_cluster" representa las observaciones en un plano utilizando los dos primeros PCAs cuando el número de columnas es mayor a dos.
+
+Reducimos la cantidad de observaciones por claridad para el estudio de los cluster y se escalan las variables:
+
+```{r}
+houses5<-houses[,c('YearBuilt','TotalBsmtSF', 
+                'CentralAirnum','GrLivArea','BedroomAbvGr',
+                'TotRmsAbvGrd','Fireplaces',
+                'GarageArea','OpenPorchSF', 'OverallQual', 
+                'BsmtFinSF1', 'YearRemodAdd','FullBath','GarageCars',
+                'BsmtFullBath', 'X1stFlrSF')]
+```
+
+```{r}
+set.seed(1234)
+houses5 <- houses5[sample(nrow(houses),400),]
+houses5 <- scale(houses5)
+```
+
+```{r}
+set.seed(1234)
+kmean_calc <- function(df, ...){
+  kmeans(df, scaled = ..., nstart = 30)
+}
+km2 <- kmean_calc(houses5, 2)
+km3 <- kmean_calc(houses5, 3)
+km4 <- kmeans(houses5, 4)
+km5 <- kmeans(houses5, 5)
+
+p1 <- fviz_cluster(km2, data = houses5, ellipse.type = "ellipse") + 
+  theme_minimal() + ggtitle("k = 2") 
+p2 <- fviz_cluster(km3, data = houses5, ellipse.type = "ellipse") + 
+  theme_minimal() + ggtitle("k = 3")
+p3 <- fviz_cluster(km4, data = houses5, ellipse.type = "ellipse") +
+  theme_minimal() + ggtitle("k = 4")
+p4 <- fviz_cluster(km5, data = houses5, ellipse.type = "ellipse") + 
+  theme_minimal() + ggtitle("k = 5")
+plot_grid(p1, p2, labels = c("k2", "k3"))
+plot_grid(p3, p4, labels = c("k4", "k5"))
+```
+Tras una primera visualización se podrían indicar como número óptimo de clusters k = 4.
+Revismos el tamaño de estos cluster
+
+```{r warning=FALSE,error=FALSE,message=FALSE}
+set.seed(1234)
+clus <- kmeans(houses5, 4) 
+housesclu <- data.frame(houses5, clus$cluster) 
+aggregate(housesclu,by=list(clus$cluster),FUN=mean) 
+```
+
+Para el cluster 1 destacan las variables TotalBsmtSF, X1stFlrSF, OverallQuall, GrLivArea, GarageArea y GarageCars. 
+Para el cluster 2 destacan BsmtFullBath, BsmtFinSF1.  
+Para el cluster 3 destacan FullBath, TotRmsAbvGrd.
+Para el cluster 4 destacan YearBuilt, OverallQual, FullBath, GarageCars.
+
+Como conclusión podemos extraer en general que hay agrupaciones en base a los metros cuadrados o area de la propiedad como se esperaba.
+Además también en base al número de habitaciones, número de baños y plazas de aparcamiento.
+Y agrupaciones en base al año de construcción y calidades de la vivienda.
+Con ello se confirma lo que ya se había extraido en el estudio previo de relaciones entre variables.
+
+Vemos el tamaño de cada cluster:
+
+```{r warning=FALSE,error=FALSE,message=FALSE}
+set.seed(1234)
+clus$size
+```
+Están equilibrados, se muestran visualmente
+
+```{r warning=FALSE,error=FALSE,message=FALSE}
+set.seed(1234)
+housesclu$cluster <- clus$cluster
+
+fviz_cluster(clus, data=housesclu)
+```
+
+Se obtienen los valores de las variables para los centros de los clusters:
+
+```{r}
+set.seed(1234)
+clucen<- kmeans(housesclu, centers=4)
+clucen$centers
+```
+
+Con esto se confirma que la variables que más influyen son los metros cuadrados o area de la propiedad, el número de habitaciones, número de baños, plazas de aparcamiento, año de construcción y remodelación.
+
+###  Contraste de hipotesis 
+
+Diferencias en el nivel del precio de la casa, diferenciando por los que tienen AireAcondicionado y los que no. 
+
+#### Escribir la hipótesis nula y alternativa
+H0: Hipotesis Nula - H0 : El precio de las casas con aire acondicionado  = El precio de las casas con aire acondicionado (Hipotesis que queremos descartar) 
+H1: Hipotesis Alternativa : H1 : El precio de las casas con aire acondicionado es diferente que las casas que no lo tienen (Se establece como la hipotesis a confirmar)
+
+#### Método
+
+a.Se trata de un contraste entre dos muestras que no estan relacionadas (independientes) porque son tipos diferentes de caracteristica de la casa. 
+b.Consideramos normal la muestra puesto que según el teorema del limite central, el tamaño de las muestras es mayor de 30 y varianza desconocida. 
+c.Metodo paramétrico ya que los métodos no parametricos, se utilizan cuando no se cumple el supuesto de normalidad y el tamaño de la muestra es pequeño. En este caso , el tamaño de la muestra no se puede considerar pequeño y los datos tienen una distribución normal.
+d.La hipotesis alternativa es bilateral ya que queremos ver si la media del precio de las casas es superior o inferior a la otro tipo.
+
+#### Calculos
+
+Paso 1)  Las hipotesis han sido planteadas en el anterior apartado. H0 = El precio de las casas con aire acondicionado  = El precio de las casas con aire acondicionado . Por lo tanto la diferencia entre las medias es igual a 0.
+
+\(H_{0}: \mu=\mu_0\)
+
+H1 = El precio de las casas con aire acondicionado es diferente a la de las que no tiene aire acondicionado.
+Por tanto la diferencia entre las medias es distinto de cero
+
+\(H_{1}: \mu\neq\mu_0\).
+
+Paso 2)  Definimoslas muestras de las dos poblaciones, que son independientes) y hacemos el test de saphiro para cada muestra
+
+```{r}
+muestra.aire <- houses$SalePrice[which(houses$CentralAir == "Y")]
+tamano.muestra.aire <- length(muestra.aire)
+tamano.muestra.aire
+shapiro.test(muestra.aire)
+
+
+muestra.sinaire <- houses$SalePrice[which(houses$CentralAir == "N")]
+tamano.muestra.sinaire<- length(muestra.sinaire)
+tamano.muestra.sinaire
+shapiro.test(muestra.sinaire)
+
+# TEst de igualdad de varianzas para verificar si son iguales o no.
+#H0:  F (ratio de varianzas) = 1 (Varianzas iguales) (Hipotesis que queremos descartar)
+#H1 : F diferente de 1           (Varianzas distintas)(Hipotesis alternativa)
+var.test(muestra.aire, muestra.sinaire,alternative = "two.sided")
+```
+El resultado del test  de varianzas  nos indica que son distintas .
+
+Paso 3)  Definimos el nivel de significación = 0,05
+
+```{r}
+nivel.signif.2muestras = 0.05
+```
+Paso 4)  Calculamos la media muestrales y las varianzas muestrales
+
+```{r}
+media.muestra.aire <- mean(muestra.aire)
+media.muestra.aire
+
+media.muestra.sinaire<- mean(muestra.sinaire) 
+media.muestra.sinaire
+
+desvi.std.aire <- sd(muestra.aire)
+desvi.std.aire
+
+desvi.std.sinaire<- sd(muestra.sinaire) 
+desvi.std.sinaire
+
+varianza.muestra.aire <- desvi.std.aire*desvi.std.aire
+varianza.muestra.aire
+
+varianza.muestra.sinaire <- desvi.std.sinaire*desvi.std.sinaire
+varianza.muestra.sinaire
+```
+Las varianzas se observan que son distintas tal y como nos habia adelantado el test anterioremente sobre las varianzas.
+
+Paso 5)  Calculamos el error estandar y el estadístico de contraste
+
+```{r}
+
+error.estandar.2muestras <- sqrt(varianza.muestra.aire/tamano.muestra.aire+
+                                   varianza.muestra.sinaire/tamano.muestra.sinaire)
+
+error.estandar.2muestras
+
+
+estadistico.contraste<-(media.muestra.aire-media.muestra.sinaire)/error.estandar.2muestras
+estadistico.contraste
+```
+
+Paso 6)  Calculamos el p-valor como : 2P(Z>|z|) por la hipotesis planteada.
+```{r}
+p.valor = 2*pt(abs(estadistico.contraste),df=pmin(tamano.muestra.aire,
+                                                  tamano.muestra.sinaire)-1,lower.tail = F)
+p.valor
+```
+
+Si El valor de p-value es menor que el nivel de significación < 0,05 , por lo que rechazaremos la hipotesis nula a favor de la alternativa. Es decir que se demuestra que los precios medios son distintos en función de si tienen o no aire acondicionado.
+
+#### Interpretación de los resultados
+
+CONCLUSiON : El valor de p-value es menor que el nivel de significación < 0,05 , por lo que rechazaremos la hipotesis nula a favor de la alternativa. Es decir, que existe diferencia en la media entre los que tienen aire acondicionado y los que no.
+
+En R : 
+```{r}
+# Aplica la función de Welch ya que las varianzas no son iguales:
+sol.ttest=t.test(muestra.aire,muestra.sinaire,alternative="two.side",
+                 var.equal=FALSE,conf.level=0.95)
+sol.ttest
+```
+
+
+###  Contraste de Hipotesis ( Método no paramétrico)
+
+Condiciones para aplicar el test: 
+* Los datos tienen que ser independientes  
+* Los datos tienen que se tienen que poder ordenar de menor a mayor. 
+* La distribucion de los datos no tiene porque asumirse como normal o que proceden de poblaciones normales. 
+* Igualdad de varianza entre grupos (homocedasticidad) -> Esto en este caso no cumple
+
+Las hipotesis son iguales que antes.
+```{r}
+par(mfrow=c(1,2))  
+ggplot(data =houses , mapping = aes(x = SalePrice, colour = CentralAir)) +
+    geom_histogram( fill = "white" , bins = 10) +
+    theme_bw() 
+    #+ facet_grid(. ~ CentralAir) +
+    theme(legend.position = "none")
+```
+
+Un método no paramétrico es el siguiente : 
+```{r}
+wilcox.test(muestra.aire,muestra.sinaire,alternative = "two.sided",mu =0, paired = F,
+            conf.level = 0.95, conf.int = TRUE)
+```
+El metodo no paramétrico también nos indica que son distintas medias. 
+
+###  ANOVA de un factor 
+Por ejemplo podemos utilizar la función de ANOVA para ver como varian los precios de las casas  según el vecindario. Vamos a filtrar por los que eran menores de 345000 ya que ese valor ya existia como outliers.. 
+
+```{r}
+#Se seleccionan los datos 
+datosAnova <-houses[which(houses$SalePrice < 345000),]
+```
+
+#### Hipótesis nula y alternativa
+
+H0 = El precio medio de las viviendas que cuestan menos de  345000  es igual independientemente del barrio en el que se ubique.
+(Todas las medias poblacionales son iguales) (Hipotesis que queremos descartar)
+
+\(H_{0}: \mu_1=\mu_2=\mu_3\)
+
+H1 = El precio medio de las viviendas que cuestan menos de  345000   es distinto dependiendo del barrio en la que se ubique.  (No todas las medias son iguales) Hipotesis que queremos demostrar.
+
+
+#### Modelo
+
+El análisis de la varianza (ANOVA) de un conjunto de muestras consiste en contrastar la hipótesis nula “todas las medias poblacionales" de las que provienen las muestras son iguales”, contra la hipótesis alternativa “no todas las medias son iguales” con un nivel de significación prefijado.
+
+Vemos el nº de muestras de cada tipo.
+
+```{r}
+tam.muestras <- table(datosAnova$Neighborhood)
+tam.muestras
+```
+
+```{r}
+#Vemos la media del salario en función del vecindario
+datosAgrupadosMedia <- aggregate(SalePrice ~ Neighborhood , data = datosAnova, FUN = mean)
+datosAgrupadosMedia
+
+#Vemos la media del salario en función del tipo de Vivienda
+datosAgrupadosMediaBldg <- aggregate(SalePrice ~ BldgType , data = datosAnova, FUN = mean)
+datosAgrupadosMediaBldg
+
+#Vemos la media del salario en función de la zona
+datosAgrupadosMediaZon <- aggregate(SalePrice ~ MSZoning , data = datosAnova, FUN = mean)
+datosAgrupadosMediaZon
+
+
+```
+
+
+```{r}
+# Pintamos un grafico para mostrar los datos..
+ggplot(data = datosAnova, aes(x =Neighborhood , y = SalePrice )) +
+    geom_boxplot() +
+    theme_bw() +  
+    theme(axis.text.x = element_text(angle = 45, vjust = 1, size = 8, hjust = 1)) 
+
+ggplot(data = datosAnova, aes(x =BldgType , y = SalePrice, color = BldgType)) +
+    geom_boxplot() +
+    theme_bw()
+
+ggplot(data = datosAnova, aes(x =MSZoning , y = SalePrice, color = MSZoning )) +
+    geom_boxplot() +
+    theme_bw()
+```
+
+Vamos a ejecutar el modelo de anova :
+```{r}
+# Utilizamos la función aov de R 
+modelo.aov.neig <- aov(SalePrice ~ Neighborhood, data = datosAnova,qr=T,projections=T)
+summary(modelo.aov.neig)
+
+modelo.aov.Bldg <- aov(SalePrice ~ BldgType, data = datosAnova,qr = T, projections =T)
+summary(modelo.aov.Bldg)
+
+modelo.aov.zone <- aov(SalePrice ~ MSZoning, data = datosAnova,qr = T, projections=T)
+summary(modelo.aov.zone)
+```
+
+#### Interpretación : 
+En el gráfico y según el resultado del modelo de ANOVA se queda demostrado que el precio medio varia mucho entre los distintos barrios.
+
+En el gráfico tb que el precio medio varia tb en función el tipo de vivienda y de tipo de zona en el que se ubique.
+
+Los resultados del modelo : 
+Sum Sq: Suma de los cuadrados 
+Mean SQ: Media de los cuadrados 
+F: El valor si es grande  sugiere que hay bastante diferencia entre las medias según el el barrio o el tipo de zona. por tanto tambien nos ayuda a descartar la hipotesis nula a favor de la hipotesis alternativa. 
+Pr (>0): Puesto que el valor p es menor que el nivel de significancia de 0.05 se puede rechazar la hipótesis nula a favor de la alternativa y determinar por tanto , que dependiendo del nivel de vecindario el precio medio puede ser diferente.
+
+No necesariamente todas las medias deben ser distintas, pero si que hay diferencias entre las medias de algunos vecindarios. 
+
+Ocurre lo mismo por tipo y por zona, el test de Anova nos confirma que las medias son diferentes. 
+
+###  ANOVA no paramétrico : 
+
+Con este test  se pretende demostrar que las medianas son diferentes (hipotesis alternativa)
+
+Con el siguiente gráfico se observa  que los distintos tipos de vivienda siguen una distribucion asimétrica  aunque la dirección parece la misma
+```{r}
+ggplot(data =houses , mapping = aes(x = SalePrice, colour = BldgType)) +
+    geom_histogram(bins = 15) +
+    theme_bw()  + facet_grid(. ~ BldgType) + 
+ theme(axis.text.x = element_text(angle = 45, vjust = 1, size = 8, hjust = 1))
+```
+
+Además  las medianas no son iguales 
+```{r}
+datosAgrupadosMediana <- aggregate(SalePrice ~ BldgType , data = datosAnova, FUN = median)
+datosAgrupadosMediana
+```
+
+Por lo que aplicamos un anova no paramétrico:
+```{r}
+modelo.KT <- kruskal.test(SalePrice ~ BldgType, data = houses)
+modelo.KT
+```
+####  Interpretación : 
+
+El p-value al ser tan bajo, menor a 0,05 , si consideramos un nivel de 95% de confianza.. indica que el test encuentra significancia en la diferencia entre grupos.
+Es decir que nos decantamos por la hipotesis alternativa de que las medianas son diferentes y por tanto las muestran no provienen de la misma distribucion población.
+El valor df , indica que en al menos 4 grupos ve diferencia en las medianas..
+
+
+###  ANOVA Multifactorial 
+
+```{r}
+# Modelo aditivo
+modelo.aov.multifa<- aov(SalePrice ~ BldgType + MSZoning, data = houses)
+summary(modelo.aov.multifa)
+
+# Modelo con interacción: 
+modelo.aov.multifi<- aov(SalePrice ~ BldgType * MSZoning, data = houses)
+summary(modelo.aov.multifi)
+
+
+modelo.aov.multif<- aov(SalePrice ~ BldgType + Neighborhood + MSZoning + Heating + 
+                          CentralAir, data = houses)
+summary(modelo.aov.multif)
+```
+El resultado nos indica que la interacción BldgType:MSZoning tiene un p-valor  menor que 0.05  con lo que parece que si existe interacción entre ambas variables.
+Y ambas variables son explicativas del salario medio. 
+
+Cuando se hace un anoVa multifactorial aditivo por distintas variables cualitativas , se observa ue todas ellas , por su nivel de significancia, indica que hay diferencias  (al menos en el vecindario hay más de 24 grupos con diferencias, en los etc. )
+
+###  Algoritmo de regresión 
+
+Vamos a llevar a cabo un modelo predictivo para diferentes variables. El objetivo es ver como impactan estas en el precio de la propiedad. Para ello dividimos el dataset en un conjunto train sobre el que entrenaremos el modelo de regresión lineal partiendo de variable numéricas y un conjunto de test sobre el que llevaremos la predicción del modelo.
+Se calculará el error cuadrático medio para medir la cantidad de error entre los dos conjuntos, comparando el valor predicho y el valor conocido.  
+
+En primer lugar se muestran las gráficas del modelo de regresión lineal para todo el dataset.
+```{r}
+par(mfrow=c(2,2))
+colnames <- dimnames(data)[[2]]
+for (i in 2:(ncol(houses)-1)) {
+  if (is.numeric(houses[,i]) == "TRUE"){
+    plot(houses$SalePrice ~ houses[,i],main=names(houses)[i], 
+         xlab=names(houses)[i],col="blue")
+    reg_line <- lm(houses$SalePrice ~ houses[,i])
+    abline(reg_line,col="red")
+    
+  }
+}
+```
+A continuación se divide el dataset en el conjunto de entrenamiento y el conjunto de test.
+   
+```{r}
+partrain <- createDataPartition(y = houses$SalePrice, 
+                               p = 0.80, 
+                               list = FALSE)
+
+trainh <- houses[partrain, ]
+
+testh <- houses[-partrain, ]   
+```
+
+Guardamos las variables target
+```{r}
+train_y <- houses$SalePrice
+test_y <- houses$SalePrice
+```
+
+Revisamos el modelo de regresión lineal sobre algunas de las variables que más correlacionan con la variable target.
+```{r}
+modelh1 <- lm(SalePrice ~ GrLivArea, data = trainh)
+```
+
+```{r}
+kable(summary(modelh1)$coef, digits=4)
+```
+
+```{r}
+predh1 <- predict(modelh1, testh)
+
+rmseh1<-sqrt(sum( (log(predh1)-log(testh$SalePrice))^2, na.rm=TRUE)/length(predh1))
+
+rmseh1
+```
+
+Con la predicción solo con el atributo GrLivArea se obtiene un error cuadrático medio elevado.  
+
+```{r}
+modelh2 <- lm(SalePrice ~ X1stFlrSF, data = trainh)
+```
+
+```{r}
+kable(summary(modelh2)$coef, digits=4)
+```
+
+```{r}
+predh2 <- predict(modelh2, testh)
+
+rmseh2<-sqrt(sum((log(predh2)-log(testh$SalePrice))^2,na.rm=TRUE)/length(predh2))
+
+rmseh2
+```
+
+Con la predicción solo con el atributo X1stFlrSF se obtiene un error cuadrático medio más elevado que el anterior.
+
+```{r}
+modelh3 <- lm(SalePrice ~ YearBuilt, data = trainh)
+
+```
+
+```{r}
+kable(summary(modelh3)$coef, digits=4)
+```
+
+```{r}
+predh3 <- predict(modelh3, testh)
+
+rmseh3<-sqrt(sum((log(predh3)-log(testh$SalePrice))^2,na.rm=TRUE)/length(predh3))
+
+rmseh3
+```
+
+Con la predicción con el atributo YearBuilt se obtiene un error cuadrático todavía mayor.
+Probamos modelo de predicción con las variables que correlacionan obtenidas en el estudio anterior.
+
+```{r}
+model_lm <- lm(SalePrice ~ YearBuilt + Fireplaces + TotalBsmtSF + GrLivArea + FullBath + 
+                 BedroomAbvGr + TotRmsAbvGrd + OpenPorchSF + GarageCars + GarageArea + 
+                 YearRemodAdd + BsmtFullBath + BsmtFinSF1 + X1stFlrSF, data = trainh )
+
+kable(summary(model_lm)$coef, digits=4)
+
+summary(model_lm)
+```
+El modelo con las principales variables tratadas puede explicar casi el 75%, un 74,57% de la varianza observada.
+El p-value del modelo es significativo < 0.00000000000000022 por lo que se puede concluir que existe una relación entre estas variables tratadas como predictoras y la variable target, precio de la vivienda.
+
+```{r}
+
+pred_lm <- predict(model_lm, testh)
+
+rmse_lm<-sqrt(sum((log(pred_lm)-log(testh$SalePrice))^2,na.rm=TRUE)/length(pred_lm))
+
+c(RMSE = rmse_lm, R2 = summary(model_lm)$r.squared)
+
+```
+
+Mostramos las primeras observaciones y comparamos el precio real y el predicho con regresión lineal
+```{r}
+table_lm <- data.frame(x = pred_lm*10, y = testh$SalePrice)
+names(table_lm) <- c("Predicted_Price", ylab = "Actual_Price")
+head(table_lm)
+```
+#### Regresión linear multiple con variables cuantitativas y cualitativas
+Probamos un lm con dos variables numericas y dos factors  (las que hemos visto
+que tienen mayor relevancia para influir en el precio
+```{r}
+recta.regresion.multiple <- lm(SalePrice~GrLivArea+GarageCars+MSZoning+BldgType+
+                                 YearBuilt,houses, na.action = na.exclude,method="qr")
+# Se resume los resultados del modelo.
+summary(recta.regresion.multiple)
+
+```
+El algoritmo de regresión lineal indica que la recta tiene una formula en la que las variables que más influyen es el Area Habitable , y también el nº de plazas de garage y el año de contrucción, mientras que si se trata de un duplex, contribuye pero para decrementar el precio (idem para Twnhs)
+
+```{r}
+# Precio de una casa en función del modelo LM multiple para una casa de las 
+#siguientes caracteristicas 
+predict.lm(recta.regresion.multiple,data.frame(GrLivArea = 45000,GarageCars =2, 
+                          MSZoning ="RL" , BldgType = "Twnhs", YearBuilt = 2000))
+predict.lm(recta.regresion.multiple,data.frame(GrLivArea = 45000,GarageCars =2,
+                        MSZoning ="RL" , BldgType = "TwnhsE", YearBuilt = 2000))
+
+predict.lm(recta.regresion.multiple,data.frame(GrLivArea = 15000,GarageCars =2, 
+                          MSZoning ="RM" , BldgType = "Duplex",YearBuilt = 1999))
+
+predict.lm(recta.regresion.multiple,data.frame(GrLivArea = 15000,GarageCars =4, 
+                          MSZoning ="FV" , BldgType = "1Fam",  YearBuilt = 2009))
+
+```
+
+###  Otro algoritmo.
+
+Probamos con un algoritmo de random forest.
+
+```{r}
+suppressMessages(library(randomForest))
+set.seed(1234)
+model_rf <- randomForest(SalePrice ~ YearBuilt + Fireplaces + TotalBsmtSF + 
+                           GrLivArea + FullBath + BedroomAbvGr + TotRmsAbvGrd + 
+                           OpenPorchSF + GarageCars + GarageArea + YearRemodAdd + 
+                           BsmtFullBath + BsmtFinSF1 + X1stFlrSF, data = trainh)
+model_rf
+```
+```{r}
+summary(model_rf)
+```
+
+```{r}
+set.seed(12345)
+pred_rf <- predict(model_rf, testh)
+
+rmse_rf<-sqrt(sum((log(pred_rf)-log(testh$SalePrice))^2,na.rm=TRUE)/length(pred_rf))
+
+R2 = summary(model_rf$r.squared)
+c(RMSE = rmse_rf)
+```
+Se aprecia que el error cuadrático medio es inferior para random forest, además que la varianza explicada es algo superior con random forest.
+```{r}
+plot(pred_rf,testh$SalePrice,xlab="Predicted Price",ylab="Actual Price",pch = 3)
+```
+
+Mostramos las primeras observaciones y comparamos el precio real y el predicho con random forest.
+```{r}
+table_rf <- data.frame(x = pred_rf*10, y = testh$SalePrice)
+names(table_rf) <- c("Predicted_Price", ylab = "Actual_Price")
+head(table_rf)
+```
+
+```{r}
+Linear_Model <- c(RMSE = rmse_lm, R2 = summary(model_lm)$r.squared)
+Random_Forest_Model <- c(RMSE = rmse_rf, pseudoR2 = mean(model_rf$rsq))
+model_comparison <- rbind(Linear_Model, Random_Forest_Model)
+model_comparison
+```
+
+Se puede ver que con ramdon forest se explica casi el 83% de la varianza, es decir algo más que con el modelo de regresión lineal, teniendo el modelo de random forest un menor error cuadrático medio, un mayor coeficiente R2 que explica la proporción de varianza de la variable SalePrice, de los precios de las viviendas, de acuerdo a las variables seleccionadas en base al estudio previo de las relaciones entre estas.
+
+### Grabación Fichero preprocesado
+
+Tras el análisis llevado a cabo, nos guardamos un juego de datos con aquellos atributos relevantes con el objetivo de poder ser utilizado en futuros estudios.
+
+```{r}
+
+varCualitativas_borrar <- which(names =="Street" | names =="Alley" 
+                        | names == "LotShape" | names =="LandContour" 
+                        | names =="Utilities" | names =="LotConfig"
+                        | names =="LandSlope" | names =="Condition2" 
+                        | names =="HouseStyle" | names == "RoofStyle"
+                        | names =="RoofMatl" | names == "Exterior1st"
+                        | names =="Exterior2nd" | names == "Foundation"
+                        | names =="MasVnrType" | names =="ExterQual" 
+                        | names == "ExterCond" | names =="BsmtFinType2"
+                        | names =="BsmtQual" | names == "BsmtCond" 
+                        | names =="BsmtExposure" | names == "BsmtFinType1" 
+                        | names =="HeatingQC"  | names == "KitchenQual" 
+                        | names =="Functional" | names == "FireplaceQu"
+                        | names =="GarageType" | names == "GarageFinish"        
+                        | names =="GarageQual" | names == "GarageCond"
+                        | names =="PavedDrive" | names == "PoolQC"
+                        | names =="Fence" | names == "MiscFeature"
+                        | names =="SaleType" | names == "SaleCondition")
+
+housesprepro<-houses[,-varCualitativas_borrar]
+names<-colnames(housesprepro)
+
+varCuantitativas_borrar <- which(names == "MSSubClass" | names ==  "LotArea"  
+                          | names ==  "OverallCond" | names == "MasVnrArea" 
+                          | names == "BsmtFinSF2" | names =="BsmtUnfSF" 
+                          | names == "X2ndFlrSF" | names =="LowQualFinSF"  
+                          | names =="HalfBath" | names =="KitchenAbvGr" 
+                          | names == "BsmtHalfBath" | names =="GarageYrBlt"   
+                          | names == "EnclosedPorch" | names =="X3SsnPorch" 
+                          | names == "ScreenPorch" | names =="MiscVal" 
+                          | names =="PoolArea" 
+                          | names =="BsmtQualnum"
+                          | names == "GarageQualnum" | names =="GarageCondnum" 
+                          | names == "ExterCondnum" | names =="PoolQCnum" )
+                           
+                        
+
+housesprepro2<-housesprepro[,-varCuantitativas_borrar]
+```
+
+```{r}
+str(housesprepro2)
+```
+
+
+```{r}
+write.csv(housesprepro2, file="pra2_clean.csv", row.names = FALSE)
+write.table(housesprepro2,file="pra2_td.csv" , sep=",", na = "NA", row.names=FALSE)
+```
+
+
+**********************
+# Representación de los resultados a partir de tablas y gráficas.
+**********************
+Para representar los datos como resultado del analisis y de las técnicas de regresion se han estado utilizando gráficos intercalados en el proceso exploratorio y posteriores a los modelos. ¿ Es necesario sacarlos y traerlos a este apartado? ¿ O qué otro tipo de graficos se necesitan aquí?
+
+
+**********************
+# Conclusiones : 
+**********************
+## Resolución del problema. A partir de los resultados obtenidos, ¿cuáles son las conclusiones? ¿Los resultados permiten responder al problema?
+
+En el estudio abordado a lo largo de esta práctica utilizando el dataset house prices se han podido extraer varias conclusiones que van en línea al objetivo marcado cuando se decidió seleccionar el dataset indicado y que responden a las preguntas planteadas inicialmente.
+A continuación se exponen estas conclusiones de manera ordenada tal y como se han ido en los distintos puntos realizados en la práctica:
+
+1. Estudio inicial para selección del dataset: en primer lugar se ha llevado a cabo una exploración del dataset seleccionado. Este consta de dos ficheros csv, train.csv y test.csv que para su tratamiento conjunto deben ser integrados. 
+Durante el estudio del dataset se confirma que contiene 80 variables independientes y una variable dependiente, lo que cubre el objetivo de la práctica. Además entre esta variables existen de diferentes tipos, categóricas y numéricas.
+
+2. Limpieza de datos: además en esta fase inicial del proceso, se lleva a cabo la búsqueda de valores vacíos para su limpieza. Entre estos se encuentra varias variables con valors vacíos, las cuales se estudian una a una para su gestión óptima. Si bien es cierto que inicialmente en primeras versiones se lleva a cabo la limpieza con ambos dataset combinados, finalmente se opta por utilizar el dataset train.csv para simplificar la práctica, aunque esta limpieza se deja completa.
+Para la gestión de los valores vacíos encontrados se tiene encuenta el tipo de variable (categórica o numérica) y el dato que aporta, reemplazando de esta forma valores vacíos con una etiqueta de "Not apply" para las variables categóricas que pueden tomar este valor como (PoolQC, Fence, etc) y además para distinguir de la etiqueta None que se incluye en los datos originales. Por otro lado se han reemplazado con el valor 0 para las variables numéricas que pueden tomar este valor y además están asociadas a variables categóricas con valor None o "Not Apply". A su vez los valores a 0 originales se han considerado valores legítimos por estar asociados a variables que no aplicaban (ej PoolArea).
+Por último también se ha incluido reemplazo utilizando estadísticos teniendo en cuenta agrupaciones por otras variables relacionadas, entre estos se han utilizadocomo la moda y la mediana.
+
+3. Eliminación de outliers: tras la limpieza de valores nulos se han explorado los posibles outliers para su mejor gestión, en la cual se ha llevado a cabo la eliminación de estos sobre alguna variables.
+
+4. Análisis exploratorio: a continuación se ha estudiado la distribución y relación entre las diferentes variables independientes y entre estas y la variable dependiente.
+En este análisis se han podido extraer las primeras conclusiones
+- Se precia que el tipo de vivienda con mayor volumen es la del tipo 1Fam cuya distribución de precios se encuentra en un rango inferior a los 200.000USD. 
+- El mayor volumen de propiedades se en cuentra por debajo de los 200.000$.con casos muy puntuales por encima de los 600.000USD.
+- Se puede ver que existe diferencias en el tipo de vivienda dependiendo de la zona, aunque se aprecia que el volumen mayor es la de tipo 1Fam. Así en zona residencial alta la vivienda fuera de 1Fam es de tipo duplex, sin embargo en zona residencial baja es de tipo TwnhsE y 2fmCon.
+- Si añadimos el tipo de barrio a la gráfica anterior se observa que la distribución del tipo de vivienda también varía por barrios, si bien domina en casi todos los barrios el tipo 1Fam, hay barrios que solo tienen tipo TwnhsE o Twnhs unicamente.
+- La distribución del nº de casas por totales y precio se aprecia que el mayor volumen de casas con aire se encuentran por debajo de los 200.000USD
+- En cuanto a la relación entre calidad de la propiedad y el precio, este aumenta de forma directa con la calidad.
+- Igualmente para la relación del año de construcción con el precio de la propiedad según el tipo de esta, se ve un ligero incremento con los años del precio, es decir para propiedades construidas en años recientes el precio es mayor para el mismo tipo de vivienda. 
+- La relación del precio con el area del garaje igualmente es incremental, aumentando este a medida que el número de plazas de aparcamiento de la vivienda es mayor.
+- El total de habitaciones de la vivienda también se relaciona de forma directa con el precio de esta, aumentando conforme el nº de habitaciones es mayor. 
+- En la relación del tipo de vivienda con el precio, se aprecia que los mayores precios se encuentra en el tipo 1Fam si bien este es el más frecuente.
+En cuanto al vecindario se ve claramente que hay vecindarios que destacan por ser donde se encuentran las propiedades más caras.
+Y en cuanto al precio por utilidades al tener la mayoria de propiedades el tipo AllPub, aquí se encuentra todo el rango de precios.
+Además se ha creado una variable nueva para el total baños con la suma de las 4 variables relacionadas con el nº de baños.
+Por otro lado se ha llevado una discretización con la variable año de construcción para ver su distribución.
+
+5. Normalización y homogenización de la varianza: se han extraído en primer lugar las variables que no tienen distribución normal. Se ha revisado la normalización con graficas de quantile-quantile plot e histograma. A continuación se ha procedido con el test de Shapiro para confirmar o refutar la hipótesis nula en algunas variables y se ha concluido que todas las variables testeadas están por debajo del coeficiente 0.05, es decir se rechaza la hipótesis nula pudiendo confirmar que no están normalizadas.
+
+6. Reducción de la dimensionalidad y Matriz de correlación y estudio de PCA: tras el estudio de las relaciones entre variables se ha seleccionado un subconjunto de atributos para confirmar su correlación con la variable target, precio de la vivienda.
+Tras su visualización se ha confirmado que correlacionan en positivo con SalePrice las variables: X1stFlrSF, LotArea, MasVnrArea, LotFrontage, TotalBsmtSF, GarageCars, FullBath, YearRemodAdd, BsmtFinSF1, OverallQual, OpenPorchSF, GarageArea, Fireplaces, TotRmsAbvGrd, BedroomAbvGr, GrLivArea, CentralAir, YearBuilt.  
+Tras la correlación se ha llevado a cabo el estudio de PCA, con el objetivo de confirmar el procentaje de contribución de  los principales componentes y las variables que los constituyen.
+
+7. Muestreo aleatorio simple y cluster: una vez realizado el estudio de PCA y a través de un muestreo aleatorio simple, se ha confirmado mediante clustering las variables que constituyen las agrupaciones, una vez realizada la limpieza y eliminación de outliers, obteniéndose 4 clusters cuyas variables confirman que las que más influyen son los metros cuadrados o area de la propiedad, el número de habitaciones, número de baños, plazas de aparcamiento, año de construcción y remodelación.
+
+8. Contraste de hipótesis: a partir del contraste de medias realizado, se puede determinar que los precios medios difieren entre las propiedades que tienen aire acoindicionado de aquellas que no lo incluyen. Asimismo se ha verificado que el precio puede diferir también por el tipo de vivienda, vecindario o zona donde se ubica la propiedad.
+Con el análisis ANOVA multifactorial se ha comprobado en qué medida influyen las variables explicativas del tipo de vivienda, vecindario, zona de ubicación, aire acondicionado y calefacción.
+
+9. Algoritmo de regresión: se ha llevado a cabo un análisis de regresión para estudiar la proporción de varianza explicada, primero con algunas variables que correlacionan con la variable precio como regresión lineal simple y después con el conjunto de variables seleccionadas previamente, regresión lineal múltiple. De este estudio se ha extraído que el modelo con las principales variables tratadas puede explicar casi el 75%, un 74,57% de la varianza observada.
+El p-value del modelo es significativo < 0.00000000000000022 por lo que se puede concluir que existe una relación entre estas variables tratadas como predictoras y la variable target, precio de la vivienda, siendo estas variables predictoras las ya indicadas previamente.
+
+10. Otro algoritmo: a su vez se ha realizado un modelo predictivo aplicando random forest, extrayéndose que con ramdon forest se explica casi el 83% de la varianza, es decir algo más que con el modelo de regresión lineal, teniendo el modelo de random forest un menor error cuadrático medio, un mayor coeficiente R2 que explica la proporción de varianza de la variable SalePrice, de los precios de las viviendas, de acuerdo a las variables seleccionadas.
+
+Con todo ello podemos dar respuesta a las preguntas plantadas al inicio de esta práctica, concluyendo que en el analisis queda demuestroda las variables que son explicativas o influyen a la hora de determinar el precio, siendo las más relevantes:
+Entre las variables cualitativas: tipo de Zona, el tipo de vivienda , el vecindario, aire condicionado, calefacción.
+Entre las variables cuantitativas: calidad de la vivienda, area en metros cuadrados de la vivienda, nº de plazas de garaje, nº de habitaciones, nº de baños, año de construcción y remodelación. 
+En este juego de datos no se ha podido confirmar la influencia de tener piscina en el precio de la vivienda, ya que la mayoría de las viviendas no han contado con esta característica.
+
+********************************
+# Contribuciones : 
+********************************
+
+A continuación se presentan los integrantes que han contribuido de forma conjunta en las distintas fases:
+
+* Investigación Previa: SMA/BMA
+* Redacción de las respuestas: SMA/BMA
+* Desarrollo código: SMA/BMA
+
+********************************
+# Entregable: 
+********************************
+
+Los entregables asociados con esta PRA2 de la asignatura de Tipología de datos son:
+- TipologiadeDatos_PRA2_Entrega.Rmd
+- TipologiadeDatos_PRA2_Entrega.pdf
+
+Ambos documentos se encuentran en:
+https://github.com/smartinalbar/PRA2/
+
+
+Además se ha completado la descripción de la práctica en el fichero README.
+
+
+********************************
+# Referencias bibliográficas : 
+********************************
+
+- Calvo M, Subirats L, Pérez D (2019). Introducción a la limpieza y análisis de los datos. Editorial UOC.
+- Squire, Megan (2015). Clean Data. Packt Publishing Ltd.
+- Peter Dalgaard (2008). Introductory statistics with R. Springer Science & Business Media.
+- Transform en R, Carlos J. Gil Bellosta
+- Jiawei Han, Micheine Kamber, Jian Pei (2012). Data mining: concepts and techniques. Morgan Kaufmann.
+- Tutorial de Github (https://guides.github.com/activities/hello-world/)
+
+
+
+
+
+
+
+
