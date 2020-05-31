@@ -608,10 +608,15 @@ Este dataset consta de numerosas columnas (81) que pasamos a detallar:
 
 A continuación se lleva a cabo la carga el dataset que vamos a utilizar. Se muestran algunos datos y la estructura del dataset:
 
+```{r echo=FALSE,warning=FALSE,error=FALSE,message=FALSE}
+setwd("/Users/begomartinez/Documents/")
+houses<-read.csv("train_house.csv", stringsAsFactors = FALSE)
+```
+
 Para cargar el dataset lo hacemos desde el directorio del entorno por defecto de cada ordenador, por lo que se ha usado un setwd para indicar el path correspondiente
 
 ```{r}
-houses<-read.csv("train_house.csv", stringsAsFactors = FALSE)
+#houses<-read.csv("train_house.csv", stringsAsFactors = FALSE)
 
 #Mostramos las primeras filas del juego de datos.
 head(houses[,1:7],3)
@@ -1437,7 +1442,7 @@ heatmap con Saleprice
 ```{r}
 options(repr.plot.width=10, repr.plot.height=10)
 qplot(x=Var1, y=Var2, data=melt(cor(heat, use="p")), fill=value, geom="tile") +
-   scale_fill_gradient2(low = "green", high = "red", mid = "white", 
+   scale_fill_gradient2(low = "light blue", high = "red", mid = "white", 
    midpoint = 0, limit = c(-1,1), space = "Lab", 
    name="Correlacion entre variables") +
    theme_minimal()+ 
@@ -1591,6 +1596,19 @@ clucen$centers
 ```
 
 Con esto se confirma que la variables que más influyen son los metros cuadrados o area de la propiedad, el número de habitaciones, número de baños, plazas de aparcamiento, año de construcción y remodelación.
+
+Si revisamos la correlación de algunas variables del cluster:
+
+```{r}
+pairs.panels(houses5[, c('YearBuilt','TotalBsmtSF', 
+                'CentralAirnum','GrLivArea',
+                'TotRmsAbvGrd', 'OverallQual','FullBath',
+                'GarageCars', 'X1stFlrSF')])
+```
+
+Se aprecia que hay variables que correlacionan fuertemente como: 
+
+GrLiveArea con TotRmsAbvGrd, YaerBuilt con OverallQual, GrLiveArea con FullBath, TotRmsAbvGrd con X1stFlrSF.
 
 ###  Contraste de hipotesis 
 
@@ -1923,7 +1941,11 @@ rmseh1<-sqrt(sum( (log(predh1)-log(testh$SalePrice))^2, na.rm=TRUE)/length(predh
 rmseh1
 ```
 
-Con la predicción solo con el atributo GrLivArea se obtiene un error cuadrático medio elevado.  
+Con la predicción solo con el atributo GrLivArea se obtiene un error cuadrático medio elevado. 
+Si lo visualizamos gráficamente
+```{r}
+plot(predh1,testh$SalePrice,xlab="Predicted Price",ylab="Actual Price",pch = 3)
+```
 
 ```{r}
 modelh2 <- lm(SalePrice ~ X1stFlrSF, data = trainh)
@@ -1942,6 +1964,10 @@ rmseh2
 ```
 
 Con la predicción solo con el atributo X1stFlrSF se obtiene un error cuadrático medio más elevado que el anterior.
+Si lo visualizamos gráficamente
+```{r}
+plot(predh2,testh$SalePrice,xlab="Predicted Price",ylab="Actual Price",pch = 3)
+```
 
 ```{r}
 modelh3 <- lm(SalePrice ~ YearBuilt, data = trainh)
@@ -1962,6 +1988,10 @@ rmseh3
 
 Con la predicción con el atributo YearBuilt se obtiene un error cuadrático todavía mayor.
 Probamos modelo de predicción con las variables que correlacionan obtenidas en el estudio anterior.
+Si lo visualizamos gráficamente
+```{r}
+plot(predh3,testh$SalePrice,xlab="Predicted Price",ylab="Actual Price",pch = 3)
+```
 
 ```{r}
 model_lm <- lm(SalePrice ~ YearBuilt + Fireplaces + TotalBsmtSF + GrLivArea + FullBath + 
@@ -1991,6 +2021,11 @@ table_lm <- data.frame(x = pred_lm*10, y = testh$SalePrice)
 names(table_lm) <- c("Predicted_Price", ylab = "Actual_Price")
 head(table_lm)
 ```
+```{r}
+plot(pred_lm,testh$SalePrice,xlab="Predicted Price",ylab="Actual Price",pch = 3)
+```
+
+
 #### Regresión linear multiple con variables cuantitativas y cualitativas
 Probamos un lm con dos variables numericas y dos factors  (las que hemos visto
 que tienen mayor relevancia para influir en el precio
@@ -2126,7 +2161,7 @@ write.table(housesprepro2,file="pra2_td.csv" , sep=",", na = "NA", row.names=FAL
 **********************
 # Representación de los resultados a partir de tablas y gráficas.
 **********************
-Para representar los datos como resultado del analisis y de las técnicas de regresion se han estado utilizando gráficos intercalados en el proceso exploratorio y posteriores a los modelos. ¿ Es necesario sacarlos y traerlos a este apartado? ¿ O qué otro tipo de graficos se necesitan aquí?
+La representación de resultados a partir de tablas y gráficas se ha llevado a cabo a lo largo de toda la práctica y queda incluida en la misma.
 
 
 **********************
@@ -2144,19 +2179,31 @@ Durante el estudio del dataset se confirma que contiene 80 variables independien
 Para la gestión de los valores vacíos encontrados se tiene encuenta el tipo de variable (categórica o numérica) y el dato que aporta, reemplazando de esta forma valores vacíos con una etiqueta de "Not apply" para las variables categóricas que pueden tomar este valor como (PoolQC, Fence, etc) y además para distinguir de la etiqueta None que se incluye en los datos originales. Por otro lado se han reemplazado con el valor 0 para las variables numéricas que pueden tomar este valor y además están asociadas a variables categóricas con valor None o "Not Apply". A su vez los valores a 0 originales se han considerado valores legítimos por estar asociados a variables que no aplicaban (ej PoolArea).
 Por último también se ha incluido reemplazo utilizando estadísticos teniendo en cuenta agrupaciones por otras variables relacionadas, entre estos se han utilizadocomo la moda y la mediana.
 
-3. Eliminación de outliers: tras la limpieza de valores nulos se han explorado los posibles outliers para su mejor gestión, en la cual se ha llevado a cabo la eliminación de estos sobre alguna variables.
+3. Eliminación de outliers: tras la limpieza de valores nulos se han explorado los posibles outliers para su mejor gestión, en la cual se ha llevado a cabo la eliminación de estos sobre alguna de las variables como son:
+* MSSubClass - Esta variable son códigos que identifican distintos tipos de vivienda. Por tanto no se puede considerar que sean valores extremos o anómalos, ya que son códigos asignados por la codificación pactada. No requiere tratamiento adicional
+* LotFrontage - Esta variable indica el nº de pies (longitud) . También consideramos que puede haber propiedades en venta que tengan un mayor nº de pie. No requiere tratamiento.
+* LotArea - Esta variable indica el nº de metros cuadrados de la parcela. Aunque existen valores que están alejados de la media del resto de viviendas, vemos lógico que puedan ser 
+un nº valido. No requiere tratamiento.
+* OVerallQual : Los valores estan dentro de los permitidos , de 0-10 , aunque la mayoria se situan en la calidad media , pero este se correponde con alguna propiedad que no estará en buenas condiciones. No requiere tratamiento , ya que es nos da referencia  de los precios con dicha calidad.
+* OverCond : Es similar , son todos valores permitidos , aunque la mayoria esten entre los valores intermedios.No requiere tratamiento.
+* YearBuilt : Año de construcción. En este caso , se opta por quitarlos porque distan mucho de la media situados entre los años 1950 - 2000 aproximaamente, por lo que  puede distorsionar la muestra.
+
 
 4. Análisis exploratorio: a continuación se ha estudiado la distribución y relación entre las diferentes variables independientes y entre estas y la variable dependiente.
 En este análisis se han podido extraer las primeras conclusiones
 - Se precia que el tipo de vivienda con mayor volumen es la del tipo 1Fam cuya distribución de precios se encuentra en un rango inferior a los 200.000USD. 
-- El mayor volumen de propiedades se en cuentra por debajo de los 200.000$.con casos muy puntuales por encima de los 600.000USD.
+- El mayor volumen de propiedades se encuentra por debajo de los 200.000$.con casos muy puntuales por encima de los 600.000USD.
 - Se puede ver que existe diferencias en el tipo de vivienda dependiendo de la zona, aunque se aprecia que el volumen mayor es la de tipo 1Fam. Así en zona residencial alta la vivienda fuera de 1Fam es de tipo duplex, sin embargo en zona residencial baja es de tipo TwnhsE y 2fmCon.
-- Si añadimos el tipo de barrio a la gráfica anterior se observa que la distribución del tipo de vivienda también varía por barrios, si bien domina en casi todos los barrios el tipo 1Fam, hay barrios que solo tienen tipo TwnhsE o Twnhs unicamente.
-- La distribución del nº de casas por totales y precio se aprecia que el mayor volumen de casas con aire se encuentran por debajo de los 200.000USD
+- Si añadimos el tipo de barrio a la relación anterior se observa que la distribución del tipo de vivienda también varía por barrios, si bien domina en casi todos los barrios el tipo 1Fam, hay barrios que solo tienen tipo TwnhsE o Twnhs unicamente.
+- Se observa que la mayoria de las propiedades cuentan con aire acondicionado y que la distribución del precio , dependiendo de si tienen o no aire acondicindo es diferente. Ya se aprecia, que el precio de las que no tienen aire acondicinado están en un franja de precio menor.
+Más adelante , haremos un contraste de hipotesis para comprobar que la media del precio de las casas, es diferente si tiene aire o no .
 - En cuanto a la relación entre calidad de la propiedad y el precio, este aumenta de forma directa con la calidad.
 - Igualmente para la relación del año de construcción con el precio de la propiedad según el tipo de esta, se ve un ligero incremento con los años del precio, es decir para propiedades construidas en años recientes el precio es mayor para el mismo tipo de vivienda. 
+En cuanto al año de remodelación, también se observa que la variación de precio aumenta si se ha remodelado recientemente. 
+Son variables explicativas del precio de la vivienda. 
 - La relación del precio con el area del garaje igualmente es incremental, aumentando este a medida que el número de plazas de aparcamiento de la vivienda es mayor.
-- El total de habitaciones de la vivienda también se relaciona de forma directa con el precio de esta, aumentando conforme el nº de habitaciones es mayor. 
+- En cuanto al precio por el area habitable general de la vivienda, se observa claramente como según aumenta el nº de metros de area habitable, el precio se incrementa y que las casas de distintos tipos tambien se distribuyen en cluster diferenciados por lo que el precio medio variará entre ellas.
+También se observa que el precio de la vivienda en función del nº de metros habitables, y diferenciando por zona, se ve que el precio medio entre zonas es diferente.
 - En la relación del tipo de vivienda con el precio, se aprecia que los mayores precios se encuentra en el tipo 1Fam si bien este es el más frecuente.
 En cuanto al vecindario se ve claramente que hay vecindarios que destacan por ser donde se encuentran las propiedades más caras.
 Y en cuanto al precio por utilidades al tener la mayoria de propiedades el tipo AllPub, aquí se encuentra todo el rango de precios.
@@ -2190,9 +2237,14 @@ En este juego de datos no se ha podido confirmar la influencia de tener piscina 
 
 A continuación se presentan los integrantes que han contribuido de forma conjunta en las distintas fases:
 
-* Investigación Previa: SMA/BMA
-* Redacción de las respuestas: SMA/BMA
-* Desarrollo código: SMA/BMA
+```{r echo=FALSE,warning=FALSE,error=FALSE,message=FALSE}
+mi_df <- data.frame(
+  "Contribuciones" = c("Investigacion Previa", "Redacción de las respuestas", 
+                       "Desarrollo Código"),
+  "Firmas" = c("SMA/BMA", "SMA/BMA", "SMA/BMA")
+)
+kable(mi_df)
+```
 
 ********************************
 # Entregable: 
